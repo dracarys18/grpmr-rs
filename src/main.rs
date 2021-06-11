@@ -4,7 +4,7 @@ mod db;
 mod util;
 use async_once::AsyncOnce;
 use commands::admin::*;
-use commands::start::start_handler;
+use commands::start::*;
 use commands::Command;
 use db::db_utils::{save_chat, save_user};
 use db::Db;
@@ -42,6 +42,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Mute => mute(&cx).await?,
             Command::Unmute => unmute(&cx).await?,
             Command::Start => start_handler(&cx).await?,
+            Command::Help => help_handler(&cx).await?,
         }
     }
     Ok(())

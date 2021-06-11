@@ -12,4 +12,6 @@ pub enum Command {
     Unmute,
     #[command(description = "Greeting a user who sends /start")]
     Start,
+    #[command(description = "Helps with available commands")]
+    Help,
 }
