@@ -43,6 +43,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Unmute => unmute(&cx).await?,
             Command::Start => start_handler(&cx).await?,
             Command::Help => help_handler(&cx).await?,
+            Command::Kick => kick(&cx).await?,
         }
     }
     Ok(())
