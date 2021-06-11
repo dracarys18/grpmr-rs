@@ -2,8 +2,9 @@ extern crate teloxide;
 mod commands;
 mod db;
 mod util;
-use commands::admin::*;
 use async_once::AsyncOnce;
+use commands::admin::*;
+use commands::start::start_handler;
 use commands::Command;
 use db::db_utils::{save_chat, save_user};
 use db::Db;
@@ -40,6 +41,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Unban => unban(&cx).await?,
             Command::Mute => mute(&cx).await?,
             Command::Unmute => unmute(&cx).await?,
+            Command::Start => start_handler(&cx).await?,
         }
     }
     Ok(())
