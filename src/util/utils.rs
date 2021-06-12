@@ -1,5 +1,6 @@
 use crate::db::db_utils::get_userid_from_name;
 use crate::{get_mdb, Cxt, Err};
+use anyhow::anyhow;
 use teloxide::prelude::*;
 use teloxide::types::{ChatMemberKind, ChatMemberStatus, MessageEntity, MessageEntityKind};
 
@@ -33,7 +34,7 @@ pub async fn user_should_restrict(cx: &Cxt, user_id: i64) -> Err {
     }
     cx.reply_to("I can't restrict people here make sure you gave me proper rights to do so!!")
         .await?;
-    return Err("User don't have the permission to restrict".into());
+    return Err(anyhow!("User don't have the permission to restrict"));
 }
 pub async fn is_user_admin(cx: &Cxt, user_id: i64) -> bool {
     let ret = cx
@@ -59,7 +60,7 @@ pub async fn user_should_be_admin(cx: &Cxt, user_id: i64) -> Err {
         return Ok(());
     }
     cx.reply_to("I am not admin here!").await?;
-    return Err("User isnt admin".into());
+    return Err(anyhow!("User isnt admin"));
 }
 pub fn extract_id_from_reply(cx: &Cxt) -> (Option<i64>, Option<String>) {
     let prev_message = cx.update.reply_to_message();
@@ -171,7 +172,7 @@ pub async fn is_group(cx: &Cxt) -> Err {
         return Ok(());
     }
     cx.reply_to("This command can't be used in private").await?;
-    return Err("This isnt a group".into());
+    return Err(anyhow!("This isnt a group"));
 }
 
 pub async fn can_send_text(cx: &Cxt, id: i64) -> anyhow::Result<bool> {

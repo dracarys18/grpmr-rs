@@ -1,5 +1,5 @@
 use crate::db::{Chat, User};
-use crate::Cxt;
+use crate::{Cxt, Err};
 use mongodb::{bson::doc, Database};
 use teloxide::types::ChatKind;
 
@@ -33,7 +33,7 @@ pub async fn get_userid_from_name(db: &Database, username: String) -> DbResult<O
     }
 }
 
-pub async fn save_user(cx: &Cxt, db: &Database) -> anyhow::Result<()> {
+pub async fn save_user(cx: &Cxt, db: &Database) -> Err {
     if let Some(user) = cx.update.from() {
         let uname = user.username.as_ref().map(|s| s.to_lowercase());
         let user = &User {
@@ -57,7 +57,7 @@ pub async fn insert_chat(db: &Database, c: &Chat) -> DbResult<mongodb::results::
     .await
 }
 
-pub async fn save_chat(cx: &Cxt, db: &Database) -> anyhow::Result<()> {
+pub async fn save_chat(cx: &Cxt, db: &Database) -> Err {
     if cx.update.chat.is_chat() {
         let chat = &cx.update.chat;
         match &chat.kind {

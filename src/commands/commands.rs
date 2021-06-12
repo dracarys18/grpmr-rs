@@ -16,4 +16,6 @@ pub enum Command {
     Help,
     #[command(description = "Kick a user from the group")]
     Kick,
+    #[command(description = "Sends info about a user")]
+    Info,
 }

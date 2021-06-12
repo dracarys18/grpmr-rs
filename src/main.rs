@@ -5,6 +5,7 @@ mod util;
 use async_once::AsyncOnce;
 use commands::admin::*;
 use commands::start::*;
+use commands::user::*;
 use commands::Command;
 use db::db_utils::{save_chat, save_user};
 use db::Db;
@@ -15,7 +16,7 @@ use teloxide::prelude::*;
 use teloxide::utils::command::BotCommand as Cmd;
 
 pub type Cxt = UpdateWithCx<AutoSend<Bot>, Message>;
-pub type Err = Result<(), Box<dyn Error + Send + Sync>>;
+pub type Err = anyhow::Result<()>;
 
 lazy_static! {
     pub static ref MONGO_URI: String = dotenv::var("MONGO_URI").expect("MONGO_URI is not defined");
@@ -44,6 +45,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Start => start_handler(&cx).await?,
             Command::Help => help_handler(&cx).await?,
             Command::Kick => kick(&cx).await?,
+            Command::Info => info(&cx).await?,
         }
     }
     Ok(())
