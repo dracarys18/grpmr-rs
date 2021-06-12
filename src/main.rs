@@ -45,6 +45,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Start => start_handler(&cx).await?,
             Command::Help => help_handler(&cx).await?,
             Command::Kick => kick(&cx).await?,
+            Command::Kickme => kickme(&cx).await?,
             Command::Info => info(&cx).await?,
         }
     }

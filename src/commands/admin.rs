@@ -235,3 +235,28 @@ pub async fn kick(cx: &Cxt) -> Err {
     cx.reply_to(kick_text).parse_mode(ParseMode::Html).await?;
     Ok(())
 }
+pub async fn kickme(cx: &Cxt) -> Err {
+    tokio::try_join!(is_group(cx), user_should_restrict(cx, get_bot_id(cx).await))?;
+    if let Some(user) = cx.update.from() {
+        let user_id = user.id;
+        if let Ok(mem) = cx.requester.get_chat_member(cx.chat_id(), user_id).await {
+            if let ChatMemberKind::Administrator(_) | ChatMemberKind::Creator(_) = mem.kind {
+                cx.reply_to("I am not gonna kick an Admin Here!").await?;
+                return Ok(());
+            }
+        } else {
+            cx.reply_to("Can't kick the user").await?;
+            return Ok(());
+        }
+        let kickme_text = format!("<b>Piss off {}</b>", user_mention_or_link(user));
+        cx.requester.kick_chat_member(cx.chat_id(), user_id).await?;
+        cx.requester
+            .unban_chat_member(cx.chat_id(), user_id)
+            .await?;
+        cx.reply_to(kickme_text).await?;
+    } else {
+        cx.reply_to("Can't get the info about the user").await?;
+        return Ok(());
+    }
+    return Ok(());
+}
