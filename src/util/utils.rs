@@ -36,6 +36,7 @@ pub async fn user_should_restrict(cx: &Cxt, user_id: i64) -> Err {
         .await?;
     return Err(anyhow!("User don't have the permission to restrict"));
 }
+#[allow(dead_code)]
 pub async fn is_user_admin(cx: &Cxt, user_id: i64) -> bool {
     let ret = cx
         .requester
@@ -55,6 +56,7 @@ pub async fn is_user_admin(cx: &Cxt, user_id: i64) -> bool {
     }
     return false;
 }
+#[allow(dead_code)]
 pub async fn user_should_be_admin(cx: &Cxt, user_id: i64) -> Err {
     if is_user_admin(cx, user_id).await {
         return Ok(());
