@@ -38,7 +38,7 @@ pub async fn save_user(cx: &Cxt, db: &Database) -> Err {
         let uname = user.username.as_ref().map(|s| s.to_lowercase());
         let user = &User {
             user_id: user.id,
-            user_name: uname.unwrap(),
+            user_name: uname.unwrap_or("None".to_string()),
         };
         insert_user(&db, user).await?;
     }
