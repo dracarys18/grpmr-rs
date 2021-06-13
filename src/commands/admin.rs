@@ -1,10 +1,12 @@
 use crate::util::{
-    can_send_text, extract_text_id_from_reply, get_bot_id, is_group, is_user_restricted,
-    user_should_restrict,
+    can_pin_messages, can_send_text, extract_text_id_from_reply, get_bot_id, is_group,
+    is_user_restricted, user_should_restrict, PinMode,
 };
 use crate::{Cxt, Err};
+use std::str::FromStr;
 use teloxide::prelude::*;
 use teloxide::types::{ChatMemberKind, ChatMemberStatus, ChatPermissions, ParseMode};
+use teloxide::utils::command::parse_command;
 use teloxide::utils::html::user_mention_or_link;
 
 pub async fn ban(cx: &Cxt) -> Err {
@@ -259,4 +261,47 @@ pub async fn kickme(cx: &Cxt) -> Err {
         return Ok(());
     }
     return Ok(());
+}
+
+pub async fn pin(cx: &Cxt) -> Err {
+    tokio::try_join!(
+        is_group(cx),
+        can_pin_messages(cx, get_bot_id(cx).await),
+        can_pin_messages(cx, cx.update.from().unwrap().id)
+    )?;
+    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    if let Some(mes) = cx.update.reply_to_message() {
+        if !args.is_empty() {
+            let pinmode = PinMode::from_str(&args[0].to_lowercase()).unwrap();
+            match pinmode {
+                PinMode::Loud => {
+                    cx.requester
+                        .pin_chat_message(cx.chat_id(), mes.id)
+                        .disable_notification(false)
+                        .await?;
+                    cx.reply_to("Pinned Loudly").await?;
+                }
+                PinMode::Silent => {
+                    cx.requester
+                        .pin_chat_message(cx.chat_id(), mes.id)
+                        .disable_notification(true)
+                        .await?;
+                    cx.reply_to("Pinned Silently").await?;
+                }
+                PinMode::Error => {
+                    cx.reply_to("Invalid PinMode! Available pinmodes are loud,hard,violent,silent")
+                        .await?;
+                }
+            }
+        } else {
+            cx.requester
+                .pin_chat_message(cx.chat_id(), mes.id)
+                .disable_notification(false)
+                .await?;
+            cx.reply_to("Pinned").await?;
+        }
+    } else {
+        cx.reply_to("Reply to some message to pin").await?;
+    }
+    Ok(())
 }

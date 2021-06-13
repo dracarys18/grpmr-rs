@@ -1,6 +1,7 @@
 use crate::db::db_utils::get_userid_from_name;
 use crate::{get_mdb, Cxt, Err};
 use anyhow::anyhow;
+use std::str::FromStr;
 use teloxide::prelude::*;
 use teloxide::types::{ChatMemberKind, ChatMemberStatus, MessageEntity, MessageEntityKind};
 
@@ -196,4 +197,41 @@ pub async fn is_user_restricted(cx: &Cxt, id: i64) -> anyhow::Result<bool> {
         && mem.kind.can_send_other_messages().unwrap_or(false)
         && mem.kind.can_add_web_page_previews().unwrap_or(false);
     Ok(!restricted)
+}
+
+pub async fn can_pin_messages(cx: &Cxt, id: i64) -> Err {
+    let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
+    match &mem.kind {
+        ChatMemberKind::Creator(_) => {
+            return Ok(());
+        }
+        ChatMemberKind::Administrator(_) => {
+            if mem.kind.can_pin_messages().unwrap_or(false) {
+                return Ok(());
+            }
+        }
+        _ => {}
+    }
+    cx.reply_to("Missing CAN_PIN_MESSAGES permissions").await?;
+    Err(anyhow!(
+        "Can't pin messages because missing can_pin_messages permissions"
+    ))
+}
+
+pub enum PinMode {
+    Loud,
+    Silent,
+    Error,
+}
+
+impl FromStr for PinMode {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        let ret = match s {
+            "loud" | "hard" | "violent" => PinMode::Loud,
+            "silent" => PinMode::Silent,
+            _ => PinMode::Error,
+        };
+        return Ok(ret);
+    }
 }
