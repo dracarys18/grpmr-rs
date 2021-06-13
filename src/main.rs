@@ -33,7 +33,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
     if txt.is_none() {
         return Ok(());
     }
-    let command = Cmd::parse(txt.unwrap(), "Tgbot-RS");
+    let command = Cmd::parse(txt.unwrap(), "grpmr_bot");
     if let Ok(c) = command {
         match c {
             Command::Ban => {
