@@ -22,6 +22,6 @@ pub enum Command {
     Kickme,
     #[command(description = "Pins a message")]
     Pin,
-    #[command(description="Unpins a mentioned message")]
-    Unpin
+    #[command(description = "Unpins a mentioned message")]
+    Unpin,
 }

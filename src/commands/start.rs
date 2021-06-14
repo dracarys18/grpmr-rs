@@ -1,9 +1,9 @@
 use super::commands::Command;
 use crate::teloxide::utils::command::BotCommand;
-use crate::{Cxt, Err};
+use crate::{Cxt, TgErr};
 use teloxide::utils::html::user_mention_or_link;
 
-pub async fn start_handler(cx: &Cxt) -> Err {
+pub async fn start_handler(cx: &Cxt) -> TgErr<()> {
     let start_message_priv = format!(
         "Hello {}! Hope you are doing well\n Send /help to know about available commands",
         user_mention_or_link(cx.update.from().unwrap())
@@ -18,7 +18,7 @@ pub async fn start_handler(cx: &Cxt) -> Err {
     return Ok(());
 }
 
-pub async fn help_handler(cx: &Cxt) -> Err {
+pub async fn help_handler(cx: &Cxt) -> TgErr<()> {
     let descriptions = Command::descriptions();
     if cx.update.chat.is_group() || cx.update.chat.is_supergroup() {
         cx.reply_to("This command is meant to be used in private")

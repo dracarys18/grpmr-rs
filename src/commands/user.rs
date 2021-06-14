@@ -1,11 +1,11 @@
 use crate::util::extract_text_id_from_reply;
-use crate::{Cxt, Err};
+use crate::{Cxt, TgErr};
 use teloxide::prelude::*;
 use teloxide::types::ParseMode;
 use teloxide::utils::command::parse_command;
 use teloxide::utils::html::user_mention;
 
-pub async fn info(cx: &Cxt) -> Err {
+pub async fn info(cx: &Cxt) -> TgErr<()> {
     let (user_id, _) = extract_text_id_from_reply(cx).await;
     let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
     let chat = cx.update.chat.clone();

@@ -2,14 +2,14 @@ use crate::util::{
     can_pin_messages, can_send_text, extract_text_id_from_reply, get_bot_id, is_group,
     is_user_restricted, user_should_restrict, PinMode,
 };
-use crate::{Cxt, Err};
+use crate::{Cxt, TgErr};
 use std::str::FromStr;
 use teloxide::prelude::*;
 use teloxide::types::{ChatMemberKind, ChatMemberStatus, ChatPermissions, ParseMode};
 use teloxide::utils::command::parse_command;
 use teloxide::utils::html::user_mention_or_link;
 
-pub async fn ban(cx: &Cxt) -> Err {
+pub async fn ban(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
         is_group(cx),                                           //Should be a group
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
@@ -59,7 +59,7 @@ pub async fn ban(cx: &Cxt) -> Err {
     Ok(())
 }
 
-pub async fn unban(cx: &Cxt) -> Err {
+pub async fn unban(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
         is_group(cx),                                           //Should be a group
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
@@ -95,7 +95,7 @@ pub async fn unban(cx: &Cxt) -> Err {
 
     Ok(())
 }
-pub async fn mute(cx: &Cxt) -> Err {
+pub async fn mute(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
         is_group(cx),                                           //Should be a group
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
@@ -143,7 +143,7 @@ pub async fn mute(cx: &Cxt) -> Err {
     cx.reply_to(mute_text).parse_mode(ParseMode::Html).await?;
     Ok(())
 }
-pub async fn unmute(cx: &Cxt) -> Err {
+pub async fn unmute(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
         is_group(cx),                                           //Should be a group
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
@@ -185,7 +185,7 @@ pub async fn unmute(cx: &Cxt) -> Err {
         .await?;
     Ok(())
 }
-pub async fn kick(cx: &Cxt) -> Err {
+pub async fn kick(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
         is_group(cx),                                           //Should be a group
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
@@ -237,7 +237,7 @@ pub async fn kick(cx: &Cxt) -> Err {
     cx.reply_to(kick_text).parse_mode(ParseMode::Html).await?;
     Ok(())
 }
-pub async fn kickme(cx: &Cxt) -> Err {
+pub async fn kickme(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(is_group(cx), user_should_restrict(cx, get_bot_id(cx).await))?;
     if let Some(user) = cx.update.from() {
         let user_id = user.id;
@@ -263,7 +263,7 @@ pub async fn kickme(cx: &Cxt) -> Err {
     return Ok(());
 }
 
-pub async fn pin(cx: &Cxt) -> Err {
+pub async fn pin(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
         is_group(cx),
         can_pin_messages(cx, get_bot_id(cx).await),
@@ -306,7 +306,7 @@ pub async fn pin(cx: &Cxt) -> Err {
     Ok(())
 }
 
-pub async fn unpin(cx: &Cxt) -> Err {
+pub async fn unpin(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
         is_group(cx),
         can_pin_messages(cx, get_bot_id(cx).await),

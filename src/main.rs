@@ -16,7 +16,7 @@ use teloxide::prelude::*;
 use teloxide::utils::command::BotCommand as Cmd;
 
 pub type Cxt = UpdateWithCx<AutoSend<Bot>, Message>;
-pub type Err = anyhow::Result<()>;
+pub type TgErr<T> = anyhow::Result<T>;
 
 lazy_static! {
     pub static ref MONGO_URI: String = dotenv::var("MONGO_URI").expect("MONGO_URI is not defined");

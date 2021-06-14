@@ -1,5 +1,5 @@
 use crate::db::db_utils::get_userid_from_name;
-use crate::{get_mdb, Cxt, Err};
+use crate::{get_mdb, Cxt, TgErr};
 use anyhow::anyhow;
 use std::str::FromStr;
 use teloxide::prelude::*;
@@ -29,7 +29,7 @@ pub async fn can_user_restrict(cx: &Cxt, user_id: i64) -> bool {
     }
     return false;
 }
-pub async fn user_should_restrict(cx: &Cxt, user_id: i64) -> Err {
+pub async fn user_should_restrict(cx: &Cxt, user_id: i64) -> TgErr<()> {
     if can_user_restrict(cx, user_id).await {
         return Ok(());
     }
@@ -58,7 +58,7 @@ pub async fn is_user_admin(cx: &Cxt, user_id: i64) -> bool {
     return false;
 }
 #[allow(dead_code)]
-pub async fn user_should_be_admin(cx: &Cxt, user_id: i64) -> Err {
+pub async fn user_should_be_admin(cx: &Cxt, user_id: i64) -> TgErr<()> {
     if is_user_admin(cx, user_id).await {
         return Ok(());
     }
@@ -169,7 +169,7 @@ pub async fn extract_text_id_from_reply(cx: &Cxt) -> (Option<i64>, Option<String
     (None, None)
 }
 
-pub async fn is_group(cx: &Cxt) -> Err {
+pub async fn is_group(cx: &Cxt) -> TgErr<()> {
     let c = &cx.update.chat;
     if c.is_group() || c.is_supergroup() {
         return Ok(());
@@ -178,7 +178,7 @@ pub async fn is_group(cx: &Cxt) -> Err {
     return Err(anyhow!("This isnt a group"));
 }
 
-pub async fn can_send_text(cx: &Cxt, id: i64) -> anyhow::Result<bool> {
+pub async fn can_send_text(cx: &Cxt, id: i64) -> TgErr<bool> {
     if cx.update.chat.is_private() {
         return Ok(false);
     }
@@ -199,7 +199,7 @@ pub async fn is_user_restricted(cx: &Cxt, id: i64) -> anyhow::Result<bool> {
     Ok(!restricted)
 }
 
-pub async fn can_pin_messages(cx: &Cxt, id: i64) -> Err {
+pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
     let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
     match &mem.kind {
         ChatMemberKind::Creator(_) => {
