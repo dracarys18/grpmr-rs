@@ -32,4 +32,6 @@ pub enum Command {
     Demote,
     #[command(description = "Get's the invite link of the chat")]
     Invitelink,
+    #[command(description = "Get's list of admins in a group")]
+    Adminlist,
 }

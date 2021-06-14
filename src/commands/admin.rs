@@ -7,7 +7,7 @@ use std::str::FromStr;
 use teloxide::prelude::*;
 use teloxide::types::{ChatKind, ChatMemberKind, ChatMemberStatus, ChatPermissions, ParseMode};
 use teloxide::utils::command::parse_command;
-use teloxide::utils::html::user_mention_or_link;
+use teloxide::utils::html::{user_mention, user_mention_or_link};
 
 pub async fn ban(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
@@ -495,5 +495,26 @@ pub async fn invitelink(cx: &Cxt) -> TgErr<()> {
                 .await?;
         }
     }
+    Ok(())
+}
+
+pub async fn adminlist(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(is_group(cx))?;
+    let chatmem = cx.requester.get_chat_administrators(cx.chat_id()).await?;
+    let adminlist = chatmem
+        .iter()
+        .map(|mem| {
+            format!(
+                "- {}",
+                user_mention(mem.user.id as i32, &mem.user.full_name())
+            )
+        })
+        .collect::<Vec<String>>();
+    cx.reply_to(format!(
+        "<b>Admin's in this group:</b>\n{}",
+        adminlist.join("\n")
+    ))
+    .parse_mode(ParseMode::Html)
+    .await?;
     Ok(())
 }
