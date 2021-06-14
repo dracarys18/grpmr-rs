@@ -183,7 +183,7 @@ pub async fn can_send_text(cx: &Cxt, id: i64) -> TgErr<bool> {
         return Ok(false);
     }
     let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
-    let restricted = mem.kind.can_send_messages().unwrap_or(false);
+    let restricted = mem.kind.can_send_messages();
     Ok(!restricted)
 }
 
@@ -192,10 +192,10 @@ pub async fn is_user_restricted(cx: &Cxt, id: i64) -> anyhow::Result<bool> {
         return Ok(false);
     }
     let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
-    let restricted = mem.kind.can_send_messages().unwrap_or(false)
-        && mem.kind.can_send_media_messages().unwrap_or(false)
-        && mem.kind.can_send_other_messages().unwrap_or(false)
-        && mem.kind.can_add_web_page_previews().unwrap_or(false);
+    let restricted = mem.kind.can_send_messages()
+        && mem.kind.can_send_media_messages()
+        && mem.kind.can_send_other_messages()
+        && mem.kind.can_add_web_page_previews();
     Ok(!restricted)
 }
 
@@ -206,7 +206,7 @@ pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
             return Ok(());
         }
         ChatMemberKind::Administrator(_) => {
-            if mem.kind.can_pin_messages().unwrap_or(false) {
+            if mem.kind.can_pin_messages() {
                 return Ok(());
             }
         }
@@ -225,7 +225,7 @@ pub async fn can_promote_members(cx: &Cxt, id: i64) -> TgErr<()> {
             return Ok(());
         }
         ChatMemberKind::Administrator(_) => {
-            if mem.kind.can_promote_members().unwrap_or(false) {
+            if mem.kind.can_promote_members() {
                 return Ok(());
             }
         }

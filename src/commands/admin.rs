@@ -373,7 +373,7 @@ pub async fn promote(cx: &Cxt) -> TgErr<()> {
                 user_mention_or_link(&chatmem.user)
             );
         }
-        if chatmem.kind.can_be_edited().unwrap_or(false) {
+        if chatmem.kind.can_be_edited() {
             cx.requester
                 .promote_chat_member(cx.chat_id(), user_id.unwrap())
                 .can_manage_chat(true)
@@ -435,7 +435,7 @@ pub async fn demote(cx: &Cxt) -> TgErr<()> {
             return Ok(());
         }
 
-        if chatmem.kind.can_be_edited().unwrap_or(false) {
+        if chatmem.kind.can_be_edited() {
             cx.requester
                 .promote_chat_member(cx.chat_id(), user_id.unwrap())
                 .can_manage_chat(false)
