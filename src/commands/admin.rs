@@ -398,10 +398,68 @@ pub async fn promote(cx: &Cxt) -> TgErr<()> {
         } else {
             cx.reply_to("Not enough rights to change admin permissions")
                 .await?;
+            return Ok(());
         }
     } else {
         cx.reply_to("Who are you trying to promote? He is not even in the group")
             .await?;
+    }
+    Ok(())
+}
+
+pub async fn demote(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),
+        can_promote_members(cx, get_bot_id(cx).await),
+        can_promote_members(cx, cx.update.from().unwrap().id)
+    )?;
+    let (user_id, _) = extract_text_id_from_reply(cx).await;
+    if user_id.is_none() {
+        cx.reply_to("Mention a user to demote").await?;
+        return Ok(());
+    }
+    if let Ok(chatmem) = cx
+        .requester
+        .get_chat_member(cx.chat_id(), user_id.unwrap())
+        .await
+    {
+        if matches!(chatmem.status(), ChatMemberStatus::Creator) {
+            cx.reply_to("This user is the Creator of the group, How can I possibly demote them")
+                .await?;
+            return Ok(());
+        }
+
+        if !matches!(chatmem.status(), ChatMemberStatus::Administrator) {
+            cx.reply_to("The user has to admin in the first place to demote")
+                .await?;
+            return Ok(());
+        }
+
+        if chatmem.kind.can_be_edited().unwrap_or(false) {
+            cx.requester
+                .promote_chat_member(cx.chat_id(), user_id.unwrap())
+                .can_manage_chat(false)
+                .can_change_info(false)
+                .can_delete_messages(false)
+                .can_manage_voice_chats(false)
+                .can_invite_users(false)
+                .can_restrict_members(false)
+                .can_pin_messages(false)
+                .can_promote_members(false)
+                .await?;
+            cx.reply_to(format!(
+                "Demoted Successfully\n<b>User:</b>{}",
+                user_mention_or_link(&chatmem.user)
+            ))
+            .parse_mode(ParseMode::Html)
+            .await?;
+        } else {
+            cx.reply_to("I don't seem to have enough rights to demote this user")
+                .await?;
+            return Ok(());
+        }
+    } else {
+        cx.reply_to("Who are you trying demote?").await?;
     }
     Ok(())
 }
