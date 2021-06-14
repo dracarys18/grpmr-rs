@@ -1,6 +1,6 @@
 use crate::util::{
-    can_pin_messages, can_send_text, extract_text_id_from_reply, get_bot_id, is_group,
-    is_user_restricted, user_should_restrict, PinMode,
+    can_pin_messages, can_promote_members, can_send_text, extract_text_id_from_reply, get_bot_id,
+    is_group, is_user_restricted, user_should_restrict, PinMode,
 };
 use crate::{Cxt, TgErr};
 use std::str::FromStr;
@@ -336,6 +336,72 @@ pub async fn unpin(cx: &Cxt) -> TgErr<()> {
                 cx.reply_to("What are you trying to unpin").await?;
             }
         }
+    }
+    Ok(())
+}
+
+pub async fn promote(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),
+        can_promote_members(cx, get_bot_id(cx).await),
+        can_promote_members(cx, cx.update.from().unwrap().id)
+    )?;
+    let (user_id, text) = extract_text_id_from_reply(cx).await;
+    if user_id.is_none() {
+        cx.reply_to("Mention someone to promote").await?;
+        return Ok(());
+    }
+    if let Ok(chatmem) = cx
+        .requester
+        .get_chat_member(cx.chat_id(), user_id.unwrap())
+        .await
+    {
+        if matches!(chatmem.status(), ChatMemberStatus::Creator) {
+            cx.reply_to("Mate the user is the creator of the group")
+                .await?;
+            return Ok(());
+        }
+        let promote_text;
+        if matches!(chatmem.status(), ChatMemberStatus::Administrator) {
+            promote_text = format!(
+                "Admin Permissions has been updated for\n <b>User:</b>{}",
+                user_mention_or_link(&chatmem.user)
+            );
+        } else {
+            promote_text = format!(
+                "Promoted\n<b>User:</b>{}",
+                user_mention_or_link(&chatmem.user)
+            );
+        }
+        if chatmem.kind.can_be_edited().unwrap_or(false) {
+            cx.requester
+                .promote_chat_member(cx.chat_id(), user_id.unwrap())
+                .can_manage_chat(true)
+                .can_change_info(true)
+                .can_delete_messages(true)
+                .can_invite_users(true)
+                .can_restrict_members(true)
+                .can_pin_messages(true)
+                .await?;
+            if text.is_some() {
+                cx.requester
+                    .set_chat_administrator_custom_title(
+                        cx.chat_id(),
+                        user_id.unwrap(),
+                        text.unwrap(),
+                    )
+                    .await?;
+            }
+            cx.reply_to(promote_text)
+                .parse_mode(ParseMode::Html)
+                .await?;
+        } else {
+            cx.reply_to("Not enough rights to change admin permissions")
+                .await?;
+        }
+    } else {
+        cx.reply_to("Who are you trying to promote? He is not even in the group")
+            .await?;
     }
     Ok(())
 }

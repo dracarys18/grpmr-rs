@@ -24,4 +24,6 @@ pub enum Command {
     Pin,
     #[command(description = "Unpins a mentioned message")]
     Unpin,
+    #[command(description = "Promotes a user")]
+    Promote,
 }

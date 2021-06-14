@@ -218,6 +218,26 @@ pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
     ))
 }
 
+pub async fn can_promote_members(cx: &Cxt, id: i64) -> TgErr<()> {
+    let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
+    match &mem.kind {
+        ChatMemberKind::Creator(_) => {
+            return Ok(());
+        }
+        ChatMemberKind::Administrator(_) => {
+            if mem.kind.can_promote_members().unwrap_or(false) {
+                return Ok(());
+            }
+        }
+        _ => {}
+    }
+    cx.reply_to("Missing CAN_PROMOTE_MEMBERS permissions")
+        .await?;
+    Err(anyhow!(
+        "Can't promote members because user is missing can_promote_members permissions"
+    ))
+}
+
 pub enum PinMode {
     Loud,
     Silent,
