@@ -18,6 +18,8 @@ pub enum Command {
     Kick,
     #[command(description = "Sends info about a user")]
     Info,
+    #[command(description = "Send's user's or chat's ID")]
+    Id,
     #[command(description = "Kick yourself from a group")]
     Kickme,
     #[command(description = "Pins a message")]

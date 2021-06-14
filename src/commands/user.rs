@@ -1,7 +1,7 @@
 use crate::util::extract_text_id_from_reply;
 use crate::{Cxt, TgErr};
 use teloxide::prelude::*;
-use teloxide::types::ParseMode;
+use teloxide::types::{ChatKind, ForwardedFrom, ParseMode};
 use teloxide::utils::command::parse_command;
 use teloxide::utils::html::user_mention;
 
@@ -53,4 +53,63 @@ pub async fn info(cx: &Cxt) -> TgErr<()> {
 
     cx.reply_to(info_text).parse_mode(ParseMode::Html).await?;
     return Ok(());
+}
+
+pub async fn get_id(cx: &Cxt) -> TgErr<()> {
+    let (user_id, _) = extract_text_id_from_reply(cx).await;
+    if user_id.is_some() {
+        if let Some(msg) = cx.update.reply_to_message() {
+            let user = msg.from();
+            if let Some(frwd) = msg.forward_from() {
+                let us1 = user.unwrap();
+                if let ForwardedFrom::User(us) = frwd {
+                    cx.reply_to(format!(
+                        "The sender {} has ID <code>{}</code> and the forwarder {} has ID <code>{}</code>",
+                        user_mention(us.id as i32,&us.first_name),
+                        us.id,
+                        user_mention(us1.id as i32,&us.first_name),
+                        us1.id))
+                        .parse_mode(ParseMode::Html)
+                        .await?;
+                } else if let ForwardedFrom::SenderName(_) = frwd {
+                    cx.reply_to(format!(
+                        "{}'s ID is <code>{}</code>",
+                        user_mention(us1.id as i32, &us1.first_name),
+                        us1.id
+                    ))
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+                }
+            } else {
+                if let Some(u) = user {
+                    cx.reply_to(format!(
+                        "{}'s ID is <code>{}</code>",
+                        user_mention(u.id as i32, &u.first_name),
+                        u.id
+                    ))
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+                } else {
+                    cx.reply_to("This user's dead I can't get his ID").await?;
+                }
+            }
+        } else if let ChatKind::Private(u) = cx.requester.get_chat(user_id.unwrap()).await?.kind {
+            cx.reply_to(format!(
+                "{}'s ID is <code>{}</code>",
+                user_mention(
+                    user_id.unwrap() as i32,
+                    &u.first_name.unwrap_or("".to_string())
+                ),
+                user_id.unwrap()
+            ))
+            .parse_mode(ParseMode::Html)
+            .await?;
+        }
+    } else {
+        let c = &cx.update.chat;
+        cx.reply_to(format!("This chat has ID of <code>{}</code>", c.id))
+            .parse_mode(ParseMode::Html)
+            .await?;
+    }
+    Ok(())
 }
