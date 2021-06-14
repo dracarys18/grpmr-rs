@@ -5,7 +5,7 @@ use crate::util::{
 use crate::{Cxt, TgErr};
 use std::str::FromStr;
 use teloxide::prelude::*;
-use teloxide::types::{ChatMemberKind, ChatMemberStatus, ChatPermissions, ParseMode};
+use teloxide::types::{ChatKind, ChatMemberKind, ChatMemberStatus, ChatPermissions, ParseMode};
 use teloxide::utils::command::parse_command;
 use teloxide::utils::html::user_mention_or_link;
 
@@ -460,6 +460,40 @@ pub async fn demote(cx: &Cxt) -> TgErr<()> {
         }
     } else {
         cx.reply_to("Who are you trying demote?").await?;
+    }
+    Ok(())
+}
+
+pub async fn invitelink(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(is_group(cx))?;
+    let chat = &cx.update.chat;
+    match &chat.kind {
+        ChatKind::Public(c) => {
+            if c.invite_link.is_some() {
+                cx.reply_to(format!(
+                    "<b>Here's the invite link of the chat</b>\n{}",
+                    c.invite_link.as_ref().unwrap()
+                ))
+                .parse_mode(ParseMode::Html)
+                .await?;
+            } else {
+                if let Ok(inv) = cx.requester.export_chat_invite_link(cx.chat_id()).await {
+                    cx.reply_to(format!(
+                        "<b>The invitelink was empty so I have created one for this chat</b>\n{}",
+                        inv
+                    ))
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+                } else {
+                    cx.reply_to("I don't have enough rights to access the invite link")
+                        .await?;
+                }
+            }
+        }
+        ChatKind::Private(_) => {
+            cx.reply_to("I can only create invite links for chats or channels")
+                .await?;
+        }
     }
     Ok(())
 }

@@ -30,4 +30,6 @@ pub enum Command {
     Promote,
     #[command(description = "Demotes a user")]
     Demote,
+    #[command(description = "Get's the invite link of the chat")]
+    Invitelink,
 }
