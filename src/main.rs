@@ -48,6 +48,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Kickme => kickme(&cx).await?,
             Command::Info => info(&cx).await?,
             Command::Pin => pin(&cx).await?,
+            Command::Unpin => unpin(&cx).await?,
         }
     }
     Ok(())

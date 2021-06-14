@@ -305,3 +305,37 @@ pub async fn pin(cx: &Cxt) -> Err {
     }
     Ok(())
 }
+
+pub async fn unpin(cx: &Cxt) -> Err {
+    tokio::try_join!(
+        is_group(cx),
+        can_pin_messages(cx, get_bot_id(cx).await),
+        can_pin_messages(cx, cx.update.from().unwrap().id),
+    )?;
+    if let Some(mes) = cx.update.reply_to_message() {
+        match cx
+            .requester
+            .unpin_chat_message(cx.chat_id())
+            .message_id(mes.id as i32)
+            .await
+        {
+            Ok(_) => {
+                cx.reply_to("Unpinned the mentioned message").await?;
+            }
+            Err(_) => {
+                cx.reply_to("The mentioned message was never pinned")
+                    .await?;
+            }
+        }
+    } else {
+        match cx.requester.unpin_all_chat_messages(cx.chat_id()).await {
+            Ok(_) => {
+                cx.reply_to("Unpinned all chat messages").await?;
+            }
+            Err(_) => {
+                cx.reply_to("What are you trying to unpin").await?;
+            }
+        }
+    }
+    Ok(())
+}
