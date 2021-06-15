@@ -1,8 +1,8 @@
 use crate::util::{
     can_pin_messages, can_promote_members, can_send_text, extract_text_id_from_reply, get_bot_id,
-    is_group, is_user_restricted, user_should_restrict, PinMode,
+    is_group, is_user_restricted, user_should_be_admin, user_should_restrict, PinMode,
 };
-use crate::{Cxt, TgErr};
+use crate::{Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use std::str::FromStr;
 use teloxide::prelude::*;
 use teloxide::types::{ChatKind, ChatMemberKind, ChatMemberStatus, ChatPermissions, ParseMode};
@@ -27,6 +27,11 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
         return Ok(());
     }
 
+    if user_id.unwrap() == *OWNER_ID || (*SUDO_USERS).contains(&user_id.unwrap()) {
+        cx.reply_to("I am not gonna ban my owner or my sudo users")
+            .await?;
+        return Ok(());
+    }
     if let Ok(mem) = cx
         .requester
         .get_chat_member(cx.chat_id(), user_id.unwrap())
@@ -109,6 +114,12 @@ pub async fn mute(cx: &Cxt) -> TgErr<()> {
     }
     if user_id.unwrap() == bot_id {
         cx.reply_to("I am not gonna mute myself fella! Try using your brain next time!")
+            .await?;
+        return Ok(());
+    }
+
+    if user_id.unwrap() == *OWNER_ID || (*SUDO_USERS).contains(&user_id.unwrap()) {
+        cx.reply_to("I am not gonna mute my owner or one of my sudo users")
             .await?;
         return Ok(());
     }
@@ -203,6 +214,11 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
         return Ok(());
     }
 
+    if user_id.unwrap() == *OWNER_ID || (*SUDO_USERS).contains(&user_id.unwrap()) {
+        cx.reply_to("I am not gonna kick my owner or one of my sudo users")
+            .await?;
+        return Ok(());
+    }
     if let Ok(mem) = cx
         .requester
         .get_chat_member(cx.chat_id(), user_id.unwrap())
@@ -241,6 +257,11 @@ pub async fn kickme(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(is_group(cx), user_should_restrict(cx, get_bot_id(cx).await))?;
     if let Some(user) = cx.update.from() {
         let user_id = user.id;
+        if user_id == *OWNER_ID || (*SUDO_USERS).contains(&user_id) {
+            cx.reply_to("You are my owner or one of my sudo users mate I can't kick you")
+                .await?;
+            return Ok(());
+        }
         if let Ok(mem) = cx.requester.get_chat_member(cx.chat_id(), user_id).await {
             if let ChatMemberKind::Administrator(_) | ChatMemberKind::Creator(_) = mem.kind {
                 cx.reply_to("I am not gonna kick an Admin Here!").await?;
@@ -373,33 +394,23 @@ pub async fn promote(cx: &Cxt) -> TgErr<()> {
                 user_mention_or_link(&chatmem.user)
             );
         }
-        if chatmem.kind.can_be_edited() {
+        cx.requester
+            .promote_chat_member(cx.chat_id(), user_id.unwrap())
+            .can_manage_chat(true)
+            .can_change_info(true)
+            .can_delete_messages(true)
+            .can_invite_users(true)
+            .can_restrict_members(true)
+            .can_pin_messages(true)
+            .await?;
+        if text.is_some() {
             cx.requester
-                .promote_chat_member(cx.chat_id(), user_id.unwrap())
-                .can_manage_chat(true)
-                .can_change_info(true)
-                .can_delete_messages(true)
-                .can_invite_users(true)
-                .can_restrict_members(true)
-                .can_pin_messages(true)
+                .set_chat_administrator_custom_title(cx.chat_id(), user_id.unwrap(), text.unwrap())
                 .await?;
-            if text.is_some() {
-                cx.requester
-                    .set_chat_administrator_custom_title(
-                        cx.chat_id(),
-                        user_id.unwrap(),
-                        text.unwrap(),
-                    )
-                    .await?;
-            }
-            cx.reply_to(promote_text)
-                .parse_mode(ParseMode::Html)
-                .await?;
-        } else {
-            cx.reply_to("Not enough rights to change admin permissions")
-                .await?;
-            return Ok(());
         }
+        cx.reply_to(promote_text)
+            .parse_mode(ParseMode::Html)
+            .await?;
     } else {
         cx.reply_to("Who are you trying to promote? He is not even in the group")
             .await?;
@@ -416,6 +427,12 @@ pub async fn demote(cx: &Cxt) -> TgErr<()> {
     let (user_id, _) = extract_text_id_from_reply(cx).await;
     if user_id.is_none() {
         cx.reply_to("Mention a user to demote").await?;
+        return Ok(());
+    }
+
+    if user_id.unwrap() == *OWNER_ID || (*SUDO_USERS).contains(&user_id.unwrap()) {
+        cx.reply_to("I can't kick the people who created me! I got loyalty")
+            .await?;
         return Ok(());
     }
     if let Ok(chatmem) = cx
@@ -465,7 +482,10 @@ pub async fn demote(cx: &Cxt) -> TgErr<()> {
 }
 
 pub async fn invitelink(cx: &Cxt) -> TgErr<()> {
-    tokio::try_join!(is_group(cx))?;
+    tokio::try_join!(
+        is_group(cx),
+        user_should_be_admin(cx, cx.update.from().unwrap().id)
+    )?;
     let chat = &cx.update.chat;
     match &chat.kind {
         ChatKind::Public(c) => {

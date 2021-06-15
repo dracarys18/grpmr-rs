@@ -20,6 +20,15 @@ pub type TgErr<T> = anyhow::Result<T>;
 
 lazy_static! {
     pub static ref MONGO_URI: String = dotenv::var("MONGO_URI").expect("MONGO_URI is not defined");
+    pub static ref OWNER_ID: i64 = dotenv::var("OWNER_ID")
+        .expect("OWNER_ID is not defined")
+        .parse::<i64>()
+        .unwrap_or(0);
+    pub static ref SUDO_USERS: Vec<i64> = dotenv::var("SUDO_USERS")
+        .expect("SUDO_USERS is not defined")
+        .split(",")
+        .map(|s| s.parse::<i64>().unwrap_or(0))
+        .collect::<Vec<i64>>();
     pub static ref MDB: AsyncOnce<mongodb::Database> =
         AsyncOnce::new(async { Db::new(MONGO_URI.to_owned()).client().await });
 }

@@ -1,5 +1,5 @@
 use crate::util::extract_text_id_from_reply;
-use crate::{Cxt, TgErr};
+use crate::{Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use teloxide::prelude::*;
 use teloxide::types::{ChatKind, ForwardedFrom, ParseMode};
 use teloxide::utils::command::parse_command;
@@ -51,6 +51,17 @@ pub async fn info(cx: &Cxt) -> TgErr<()> {
         user_mention(us_inf.id as i32, "link")
     );
 
+    if us_inf.id == *OWNER_ID {
+        info_text = format!(
+            "{}\n\n<i>Note:-This user is my owner I will always be loyal to him</i>",
+            info_text
+        );
+    } else if (*SUDO_USERS).contains(&us_inf.id) {
+        info_text = format!(
+            "{}\n\n<i>Note:-This is one of my sudo users as powerful as my owner beware</i>",
+            info_text
+        );
+    }
     cx.reply_to(info_text).parse_mode(ParseMode::Html).await?;
     return Ok(());
 }

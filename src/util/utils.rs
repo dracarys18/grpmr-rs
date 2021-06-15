@@ -1,5 +1,5 @@
 use crate::db::db_utils::get_userid_from_name;
-use crate::{get_mdb, Cxt, TgErr};
+use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use anyhow::anyhow;
 use std::str::FromStr;
 use teloxide::prelude::*;
@@ -15,6 +15,9 @@ pub async fn can_user_restrict(cx: &Cxt, user_id: i64) -> bool {
         .get_chat_member(cx.chat_id(), user_id)
         .await
         .ok();
+    if user_id == *OWNER_ID || (*SUDO_USERS).contains(&user_id) {
+        return true;
+    }
     if ret.is_none() {
         return false;
     }
@@ -37,7 +40,6 @@ pub async fn user_should_restrict(cx: &Cxt, user_id: i64) -> TgErr<()> {
         .await?;
     return Err(anyhow!("User don't have the permission to restrict"));
 }
-#[allow(dead_code)]
 pub async fn is_user_admin(cx: &Cxt, user_id: i64) -> bool {
     let ret = cx
         .requester
@@ -45,6 +47,9 @@ pub async fn is_user_admin(cx: &Cxt, user_id: i64) -> bool {
         .await
         .ok();
 
+    if user_id == *OWNER_ID || (*SUDO_USERS).contains(&user_id) {
+        return true;
+    }
     if ret.is_none() {
         return false;
     }
@@ -57,7 +62,6 @@ pub async fn is_user_admin(cx: &Cxt, user_id: i64) -> bool {
     }
     return false;
 }
-#[allow(dead_code)]
 pub async fn user_should_be_admin(cx: &Cxt, user_id: i64) -> TgErr<()> {
     if is_user_admin(cx, user_id).await {
         return Ok(());
@@ -201,6 +205,9 @@ pub async fn is_user_restricted(cx: &Cxt, id: i64) -> anyhow::Result<bool> {
 
 pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
     let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
+    if id == *OWNER_ID || (*SUDO_USERS).contains(&id) {
+        return Ok(());
+    }
     match &mem.kind {
         ChatMemberKind::Creator(_) => {
             return Ok(());
@@ -220,6 +227,9 @@ pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
 
 pub async fn can_promote_members(cx: &Cxt, id: i64) -> TgErr<()> {
     let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
+    if id == *OWNER_ID || (*SUDO_USERS).contains(&id) {
+        return Ok(());
+    }
     match &mem.kind {
         ChatMemberKind::Creator(_) => {
             return Ok(());
