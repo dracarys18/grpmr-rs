@@ -248,6 +248,28 @@ pub async fn can_promote_members(cx: &Cxt, id: i64) -> TgErr<()> {
     ))
 }
 
+pub async fn sudo_filter(uid: i64) -> TgErr<()> {
+    if (*SUDO_USERS).contains(&uid) {
+        return Ok(());
+    }
+    Err(anyhow!("This command only works for sudo users"))
+}
+
+pub async fn owner_filter(uid: i64) -> TgErr<()> {
+    if uid == *OWNER_ID {
+        return Ok(());
+    }
+    Err(anyhow!("This command only works for owner"))
+}
+
+pub async fn sudo_or_owner_filter(uid: i64) -> TgErr<()> {
+    if (*SUDO_USERS).contains(&uid) || *OWNER_ID == uid {
+        return Ok(());
+    }
+    Err(anyhow!(
+        "This command only works for either owner or sudo users"
+    ))
+}
 pub enum PinMode {
     Loud,
     Silent,

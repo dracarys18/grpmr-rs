@@ -384,8 +384,9 @@ pub async fn promote(cx: &Cxt) -> TgErr<()> {
         }
         let promote_text;
         if matches!(chatmem.status(), ChatMemberStatus::Administrator) {
-            if !chatmem.kind.can_be_edited(){
-                cx.reply_to("I dont have enough rights to update the user's permissons!").await?;
+            if !chatmem.kind.can_be_edited() {
+                cx.reply_to("I dont have enough rights to update the user's permissons!")
+                    .await?;
                 return Ok(());
             }
             promote_text = format!(
