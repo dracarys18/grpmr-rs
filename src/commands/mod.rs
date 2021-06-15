@@ -1,8 +1,10 @@
 pub mod admin;
 pub mod commands;
+pub mod msg_delete;
 pub mod start;
 pub mod user;
 pub use admin::*;
 pub use commands::Command;
+pub use msg_delete::*;
 pub use start::*;
 pub use user::*;

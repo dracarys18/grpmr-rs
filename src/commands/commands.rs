@@ -34,4 +34,8 @@ pub enum Command {
     Invitelink,
     #[command(description = "Get's list of admins in a group")]
     Adminlist,
+    #[command(description = "Delete bulk of messages in a group")]
+    Purge,
+    #[command(description = "Deletes a message")]
+    Del,
 }

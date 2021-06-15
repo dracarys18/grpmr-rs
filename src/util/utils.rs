@@ -225,6 +225,28 @@ pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
     ))
 }
 
+pub async fn can_delete_messages(cx: &Cxt, id: i64) -> TgErr<()> {
+    let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
+    if id == *OWNER_ID || (*SUDO_USERS).contains(&id) {
+        return Ok(());
+    }
+    match &mem.kind {
+        ChatMemberKind::Creator(_) => {
+            return Ok(());
+        }
+        ChatMemberKind::Administrator(_) => {
+            if mem.kind.can_delete_messages() {
+                return Ok(());
+            }
+        }
+        _ => {}
+    };
+    cx.reply_to("Missing CAN_DELETE_Messages permissions")
+        .await?;
+    Err(anyhow!(
+        "Can't delete messages missing can_delete_messages permission"
+    ))
+}
 pub async fn can_promote_members(cx: &Cxt, id: i64) -> TgErr<()> {
     let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
     if id == *OWNER_ID || (*SUDO_USERS).contains(&id) {

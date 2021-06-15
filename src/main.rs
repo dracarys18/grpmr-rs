@@ -4,6 +4,7 @@ mod db;
 mod util;
 use async_once::AsyncOnce;
 use commands::admin::*;
+use commands::msg_delete::*;
 use commands::start::*;
 use commands::user::*;
 use commands::Command;
@@ -63,6 +64,8 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Demote => demote(&cx).await?,
             Command::Invitelink => invitelink(&cx).await?,
             Command::Adminlist => adminlist(&cx).await?,
+            Command::Purge => purge(&cx).await?,
+            Command::Del => delete(&cx).await?,
         }
     }
     Ok(())
