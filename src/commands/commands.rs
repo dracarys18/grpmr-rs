@@ -38,4 +38,6 @@ pub enum Command {
     Purge,
     #[command(description = "Deletes a message")]
     Del,
+    #[command(description = "Leaves a chat (Owner use only)")]
+    Leavechat,
 }
