@@ -1,7 +1,7 @@
 use crate::{Cxt, TgErr};
 use regex::Regex;
 use teloxide::prelude::*;
-use teloxide::types::ParseMode;
+use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode};
 use teloxide::utils::command::parse_command;
 
 pub async fn ud(cx: &Cxt) -> TgErr<()> {
@@ -31,9 +31,22 @@ pub async fn ud(cx: &Cxt) -> TgErr<()> {
         ubdata.unwrap().get("definition").unwrap().as_str().unwrap(),
         ubdata.unwrap().get("example").unwrap().as_str().unwrap()
     );
+    let button = InlineKeyboardButton::url(
+        "Know More".to_string(),
+        ubdata
+            .unwrap()
+            .get("permalink")
+            .unwrap()
+            .as_str()
+            .unwrap()
+            .to_owned(),
+    );
     let mut reply_text = ignore_char.replace_all(&txt, "").into_owned();
     //Telegram's character limit
     reply_text.truncate(4096);
-    cx.reply_to(reply_text).parse_mode(ParseMode::Html).await?;
+    cx.reply_to(reply_text)
+        .parse_mode(ParseMode::Html)
+        .reply_markup(InlineKeyboardMarkup::default().append_row(vec![button]))
+        .await?;
     Ok(())
 }
