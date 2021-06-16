@@ -44,7 +44,7 @@ pub async fn purge(cx: &Cxt) -> TgErr<()> {
         can_delete_messages(cx, get_bot_id(cx).await),
         can_delete_messages(cx, cx.update.from().unwrap().id),
     )?;
-    let mut count:u32 = 0;
+    let mut count: u32 = 0;
     if let Some(msg) = cx.update.reply_to_message() {
         let msg_id = msg.id;
         let delete_to = cx.update.id;
@@ -57,34 +57,34 @@ pub async fn purge(cx: &Cxt) -> TgErr<()> {
                 .await?;
                 return Ok(());
             }
-            count+=1;
+            count += 1;
         }
         if let Err(m) = cx
             .requester
             .delete_message(cx.chat_id(), cx.update.id)
             .await
         {
-            cx.requester.send_message(cx.chat_id(),format!(
-                "Error while deleting messages\n Error Message:<code>{}</code>",
-                m
-            ))
-            .parse_mode(ParseMode::Html)
-            .await?;
+            cx.requester
+                .send_message(
+                    cx.chat_id(),
+                    format!(
+                        "Error while deleting messages\n Error Message:<code>{}</code>",
+                        m
+                    ),
+                )
+                .parse_mode(ParseMode::Html)
+                .await?;
             return Ok(());
         }
     } else {
         cx.reply_to("Reply to some message to purge").await?;
         return Ok(());
     }
-    let msg = cx.requester.send_message(cx.chat_id(), format!("Purged {} messages",count)).await?;
-    tokio::time::sleep(Duration::from_secs(4)).await;
-    if let Err(m) = cx.requester.delete_message(cx.chat_id(), msg.id).await{
-        cx.requester.send_message(cx.chat_id(),format!(
-            "Error while deleting messages\n Error Message:<code>{}</code>",
-            m
-        ))
-        .parse_mode(ParseMode::Html)
+    let msg = cx
+        .requester
+        .send_message(cx.chat_id(), format!("Purged {} messages", count))
         .await?;
-    }
+    tokio::time::sleep(Duration::from_secs(4)).await;
+    cx.requester.delete_message(cx.chat_id(), msg.id).await?;
     Ok(())
 }

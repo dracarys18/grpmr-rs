@@ -1,5 +1,5 @@
 use crate::util::owner_filter;
-use crate::{Cxt, TgErr,OWNER_ID};
+use crate::{Cxt, TgErr, OWNER_ID};
 use teloxide::prelude::*;
 use teloxide::types::{ChatKind, ParseMode};
 use teloxide::utils::command::parse_command;
@@ -18,12 +18,16 @@ pub async fn leavechat(cx: &Cxt) -> TgErr<()> {
         match chat.kind {
             ChatKind::Public(pu) => {
                 cx.requester.leave_chat(chat_id).await?;
-                cx.requester.send_message(*OWNER_ID,format!(
-                    "I have left <code>{}</code> boss",
-                    html::escape(&pu.title.unwrap())
-                ))
-                .parse_mode(ParseMode::Html)
-                .await?;
+                cx.requester
+                    .send_message(
+                        *OWNER_ID,
+                        format!(
+                            "I have left <code>{}</code> boss",
+                            html::escape(&pu.title.unwrap())
+                        ),
+                    )
+                    .parse_mode(ParseMode::Html)
+                    .await?;
                 return Ok(());
             }
             ChatKind::Private(_) => {
