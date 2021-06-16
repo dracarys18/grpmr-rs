@@ -40,4 +40,6 @@ pub enum Command {
     Del,
     #[command(description = "Leaves a chat (Owner use only)")]
     Leavechat,
+    #[command(description = "Urban Dictionary")]
+    Ud,
 }

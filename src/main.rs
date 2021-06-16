@@ -4,6 +4,7 @@ mod db;
 mod util;
 use async_once::AsyncOnce;
 use commands::admin::*;
+use commands::misc::*;
 use commands::msg_delete::*;
 use commands::start::*;
 use commands::sudo::*;
@@ -68,6 +69,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Purge => purge(&cx).await?,
             Command::Del => delete(&cx).await?,
             Command::Leavechat => leavechat(&cx).await?,
+            Command::Ud => ud(&cx).await?,
         }
     }
     Ok(())

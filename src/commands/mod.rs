@@ -1,11 +1,13 @@
 pub mod admin;
 pub mod commands;
+pub mod misc;
 pub mod msg_delete;
 pub mod start;
 pub mod sudo;
 pub mod user;
 pub use admin::*;
 pub use commands::Command;
+pub use misc::*;
 pub use msg_delete::*;
 pub use start::*;
 pub use sudo::*;
