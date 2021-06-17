@@ -150,6 +150,12 @@ pub async fn extract_text_id_from_reply(cx: &Cxt) -> (Option<i64>, Option<String
                     if res.len() >= 3 {
                         text = Some(res[2].to_owned());
                     }
+                } else if cx.update.reply_to_message().is_some() {
+                    user_id = Some(cx.update.reply_to_message().unwrap().from().unwrap().id);
+                    let res: Vec<_> = msg_text.splitn(2, char::is_whitespace).collect();
+                    if res.len() >= 2 {
+                        text = Some(res[1].to_owned());
+                    }
                 }
             } else if cx.update.reply_to_message().is_some() {
                 let (id, tet) = extract_id_from_reply(&cx);
