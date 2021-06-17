@@ -1,6 +1,7 @@
 use crate::db::db_utils::get_userid_from_name;
 use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use anyhow::anyhow;
+use std::fmt::Display;
 use std::str::FromStr;
 use teloxide::prelude::*;
 use teloxide::types::{ChatMemberKind, ChatMemberStatus, MessageEntity, MessageEntityKind};
@@ -307,5 +308,75 @@ impl FromStr for PinMode {
             _ => PinMode::Error,
         };
         return Ok(ret);
+    }
+}
+
+pub enum TimeUnit {
+    Seconds(u64),
+    Minutes(u64),
+    Hours(u64),
+    Days(u64),
+}
+
+impl FromStr for TimeUnit {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        let split: Vec<_> = s.splitn(2, char::is_whitespace).collect();
+        let num;
+        let unit;
+
+        if split.len() == 1 && split[0].ends_with(&['h', 'm', 's', 'd'][..]) && split[0].len() >= 2
+        {
+            let mut t = split[0].to_owned();
+            let u = t.pop().unwrap().to_string();
+            t = t.to_string();
+
+            num = match t.parse::<u64>() {
+                Ok(n) => n,
+                Err(_) => {
+                    return Err("Invalid time unit use the following units: h, m, s, d");
+                }
+            };
+            unit = u;
+        } else if split.len() == 2 {
+            num = match split[0].parse::<u64>() {
+                Ok(n) => n,
+                Err(_) => {
+                    return Err("Invalid time unit use the following units: h, m, s, d");
+                }
+            };
+
+            unit = split[1].to_owned()
+        } else {
+            return Err("Invalid time unit use the following units: h, m, s, d");
+        }
+
+        match &unit as &str {
+            "h" | "hours" => Ok(TimeUnit::Hours(num)),
+            "m" | "minutes" => Ok(TimeUnit::Minutes(num)),
+            "s" | "seconds" => Ok(TimeUnit::Seconds(num)),
+            "d" | "days" => Ok(TimeUnit::Days(num)),
+            _ => Err("Invalid time unit use the following units: h, m, s, d"),
+        }
+    }
+}
+
+impl Display for TimeUnit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TimeUnit::Seconds(t) => write!(f, "{} second(s)", t),
+            TimeUnit::Minutes(t) => write!(f, "{} minute(s)", t),
+            TimeUnit::Hours(t) => write!(f, "{} hour(s)", t),
+            TimeUnit::Days(t) => write!(f, "{} day(s)", t),
+        }
+    }
+}
+
+pub fn get_time(unit: &TimeUnit) -> u64 {
+    match unit {
+        TimeUnit::Hours(t) => t * 3600,
+        TimeUnit::Minutes(t) => t * 60,
+        TimeUnit::Seconds(t) => *t,
+        TimeUnit::Days(t) => t * 3600 * 24,
     }
 }
