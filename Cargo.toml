@@ -16,6 +16,7 @@ anyhow = "*"
 lazy_static = "*"
 async_once = "*"
 dotenv = "*"
-reqwest = "*"
+reqwest = {version="*",features= ["json"]}
 serde_json = "*"
 regex = "*"
+mime = "*"

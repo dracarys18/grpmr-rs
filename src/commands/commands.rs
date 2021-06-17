@@ -42,4 +42,6 @@ pub enum Command {
     Leavechat,
     #[command(description = "Urban Dictionary")]
     Ud,
+    #[command(description = "Pastes text to dogbin")]
+    Paste,
 }

@@ -27,6 +27,8 @@ lazy_static! {
         .expect("OWNER_ID is not defined")
         .parse::<i64>()
         .unwrap_or(0);
+    pub static ref BOT_TOKEN: String =
+        dotenv::var("TELOXIDE_TOKEN").expect("TELOXIDE_TOKEN is empty");
     pub static ref SUDO_USERS: Vec<i64> = dotenv::var("SUDO_USERS")
         .expect("SUDO_USERS is not defined")
         .split(",")
@@ -70,6 +72,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Del => delete(&cx).await?,
             Command::Leavechat => leavechat(&cx).await?,
             Command::Ud => ud(&cx).await?,
+            Command::Paste => dogbin(&cx).await?,
         }
     }
     Ok(())
