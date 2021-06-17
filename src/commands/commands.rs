@@ -4,6 +4,8 @@ use teloxide::utils::command::BotCommand;
 pub enum Command {
     #[command(description = "Ban a user")]
     Ban,
+    #[command(description = "Bans a user for sometime")]
+    Tban,
     #[command(description = "Unbans a user")]
     Unban,
     #[command(description = "Mute a user")]

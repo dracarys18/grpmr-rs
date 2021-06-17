@@ -53,6 +53,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Ban => {
                 ban(&cx).await?;
             }
+            Command::Tban => temp_ban(&cx).await?,
             Command::Unban => unban(&cx).await?,
             Command::Mute => mute(&cx).await?,
             Command::Tmute => temp_mute(&cx).await?,

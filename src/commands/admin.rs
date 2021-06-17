@@ -95,6 +95,16 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
             return Ok(());
         }
 
+        if matches!(
+            mem.status(),
+            ChatMemberStatus::Kicked | ChatMemberStatus::Left
+        ) {
+            cx.reply_to(
+                "This user is either left of banned from here there's no point of muting him",
+            )
+            .await?;
+            return Ok(());
+        }
         if sudo_or_owner_filter(user_id.unwrap()).await.is_ok() {
             cx.reply_to("This user is either my owner or my sudo user I am not gonna mute him")
                 .await?;
@@ -117,6 +127,73 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
             .until_date(cx.update.date as u64 + t)
             .await?;
         cx.reply_to(format!("<b>Muted for <i>{}</i></b> ", u.unwrap()))
+            .parse_mode(ParseMode::Html)
+            .await?;
+    } else {
+        cx.reply_to("Can't get this user maybe he's not in the group or he deleted his account")
+            .await?;
+    }
+
+    Ok(())
+}
+
+pub async fn temp_ban(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),                                           //Should be a group
+        user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
+        user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
+    )?;
+    let (user_id, text) = extract_text_id_from_reply(cx).await;
+    if user_id.is_none() {
+        cx.reply_to("No user was targetted").await?;
+        return Ok(());
+    }
+
+    if text.is_none() {
+        cx.reply_to("Mention muting time in s,m,h,d").await?;
+        return Ok(());
+    }
+
+    if let Ok(mem) = cx
+        .requester
+        .get_chat_member(cx.chat_id(), user_id.unwrap())
+        .await
+    {
+        if matches!(
+            mem.status(),
+            ChatMemberStatus::Administrator | ChatMemberStatus::Creator
+        ) {
+            cx.reply_to("I am not gonna ban an admin here").await?;
+            return Ok(());
+        }
+
+        if matches!(mem.status(), ChatMemberStatus::Kicked) {
+            cx.reply_to("This user is already banned").await?;
+            return Ok(());
+        }
+
+        if sudo_or_owner_filter(user_id.unwrap()).await.is_ok() {
+            cx.reply_to("This user is either my owner or my sudo user I am not gonna ban him")
+                .await?;
+            return Ok(());
+        }
+
+        if user_id.unwrap() == get_bot_id(&cx).await {
+            cx.reply_to("I am not gonna ban myself you idiot!").await?;
+            return Ok(());
+        }
+        let u = text.unwrap().parse::<TimeUnit>();
+        if u.is_err() {
+            cx.reply_to("Please specify with proper unit: s,m,h,d")
+                .await?;
+            return Ok(());
+        }
+        let t = get_time(u.as_ref().unwrap());
+        cx.requester
+            .kick_chat_member(cx.chat_id(), user_id.unwrap())
+            .until_date(cx.update.date as u64 + t)
+            .await?;
+        cx.reply_to(format!("<b>Banned for <i>{}</i></b> ", u.unwrap()))
             .parse_mode(ParseMode::Html)
             .await?;
     } else {
