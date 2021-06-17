@@ -16,10 +16,8 @@ pub async fn ud(cx: &Cxt) -> TgErr<()> {
         "http://api.urbandictionary.com/v0/define?term={}",
         text
     ))
-    .await?
-    .text()
     .await?;
-    let data: serde_json::Value = serde_json::from_str(&resp).unwrap();
+    let data: serde_json::Value = resp.json().await?;
     let ubdata = data.get("list").unwrap().get(0);
     if ubdata.is_none() {
         cx.reply_to("No result found for the keyword").await?;
