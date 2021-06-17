@@ -8,6 +8,8 @@ pub enum Command {
     Unban,
     #[command(description = "Mute a user")]
     Mute,
+    #[command(description = "Mutes user for some time")]
+    Tmute,
     #[command(description = "Unmute a user")]
     Unmute,
     #[command(description = "Greeting a user who sends /start")]

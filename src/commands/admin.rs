@@ -1,6 +1,7 @@
 use crate::util::{
     can_pin_messages, can_promote_members, can_send_text, extract_text_id_from_reply, get_bot_id,
-    is_group, is_user_restricted, user_should_be_admin, user_should_restrict, PinMode,
+    get_time, is_group, is_user_restricted, sudo_or_owner_filter, user_should_be_admin,
+    user_should_restrict, PinMode, TimeUnit,
 };
 use crate::{Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use std::str::FromStr;
@@ -61,6 +62,68 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
         .kick_chat_member(cx.chat_id(), user_id.unwrap())
         .await?;
     cx.reply_to(ban_text).parse_mode(ParseMode::Html).await?;
+    Ok(())
+}
+
+pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),                                           //Should be a group
+        user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
+        user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
+    )?;
+    let (user_id, text) = extract_text_id_from_reply(cx).await;
+    if user_id.is_none() {
+        cx.reply_to("No user was targetted").await?;
+        return Ok(());
+    }
+
+    if text.is_none() {
+        cx.reply_to("Mention muting time in s,m,h,d").await?;
+        return Ok(());
+    }
+
+    if let Ok(mem) = cx
+        .requester
+        .get_chat_member(cx.chat_id(), user_id.unwrap())
+        .await
+    {
+        if matches!(
+            mem.status(),
+            ChatMemberStatus::Administrator | ChatMemberStatus::Creator
+        ) {
+            cx.reply_to("I am not gonna mute an admin here").await?;
+            return Ok(());
+        }
+
+        if sudo_or_owner_filter(user_id.unwrap()).await.is_ok() {
+            cx.reply_to("This user is either my owner or my sudo user I am not gonna mute him")
+                .await?;
+            return Ok(());
+        }
+
+        if user_id.unwrap() == get_bot_id(&cx).await {
+            cx.reply_to("I am not gonna mute myself you idiot!").await?;
+            return Ok(());
+        }
+        let u = text.unwrap().parse::<TimeUnit>();
+        if u.is_err() {
+            cx.reply_to("Please specify with proper unit: s,m,h,d")
+                .await?;
+            return Ok(());
+        }
+        let t = get_time(u.as_ref().unwrap());
+        cx.requester
+            .restrict_chat_member(cx.chat_id(), user_id.unwrap(), ChatPermissions::default())
+            .until_date(cx.update.date as u64 + t)
+            .await?;
+        cx.reply_to(format!("<b>Muted for <i>{}</i></b> ", u.unwrap()))
+            .parse_mode(ParseMode::Html)
+            .await?;
+    } else {
+        cx.reply_to("Can't get this user maybe he's not in the group or he deleted his account")
+            .await?;
+    }
+
     Ok(())
 }
 

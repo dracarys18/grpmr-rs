@@ -68,13 +68,11 @@ pub async fn dogbin(cx: &Cxt) -> TgErr<()> {
                         *BOT_TOKEN, file_dw
                     );
                     _data = reqwest::get(url).await?.text().await?;
-                }
-                else {
+                } else {
                     cx.reply_to("Invalid file type").await?;
                     return Ok(());
                 }
-            }
-            else{
+            } else {
                 cx.reply_to("This file format is not supported").await?;
                 return Ok(());
             }
