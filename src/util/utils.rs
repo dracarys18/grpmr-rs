@@ -390,24 +390,25 @@ pub fn get_time(unit: &TimeUnit) -> u64 {
 }
 
 pub enum LockType {
-    Text,
-    Other,
-    Media,
-    Poll,
-    Web,
-    Error,
+    Text(String),
+    Other(String),
+    Media(String),
+    Poll(String),
+    Web(String),
+    Error(String),
 }
 
 impl FromStr for LockType {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        let kind = String::new();
         let ret = match s {
-            "all" | "text" => LockType::Text,
-            "sticker" | "gif" => LockType::Other,
-            "url" | "web" => LockType::Web,
-            "media" => LockType::Media,
-            "poll" => LockType::Poll,
-            _ => LockType::Error,
+            "all" | "text" => LockType::Text(kind),
+            "sticker" | "gif" => LockType::Other(kind),
+            "url" | "web" => LockType::Web(kind),
+            "media" => LockType::Media(kind),
+            "poll" => LockType::Poll(kind),
+            _ => LockType::Error(kind),
         };
         Ok(ret)
     }
@@ -415,16 +416,17 @@ impl FromStr for LockType {
 
 impl Display for LockType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            &LockType::Text => write!(f, "Muted <i>text</i> for Non-admins"),
-            &LockType::Other => write!(f, "Muted <i>sticker,gif,game</i> for Non-Admins"),
-            &LockType::Media => write!(
+        match &self {
+            LockType::Text(kind) => write!(f, "{}ed <i>all</i> for Non-admins", kind),
+            LockType::Other(kind) => write!(f, "{}ed <i>sticker,gif,game</i> for Non-Admins", kind),
+            LockType::Media(kind) => write!(
                 f,
-                "Muted <i>Media(photos,animations,documents,stickers/gif,video)</i> for Non-Admins"
+                "{}ed <i>Media(photos,animations,documents,stickers/gif,video)</i> for Non-Admins",
+                kind
             ),
-            &LockType::Web => write!(f, "Muted <i>URL</i> previewing for Non-Admins"),
-            &LockType::Poll => write!(f, "Muted <i>Polls</i> for Non-Admins"),
-            &LockType::Error => write!(
+            LockType::Web(kind) => write!(f, "{}ed <i>URL</i> previewing for Non-Admins", kind),
+            LockType::Poll(kind) => write!(f, "{}ed <i>Polls</i> for Non-Admins", kind),
+            LockType::Error(_) => write!(
                 f,
                 "Invalid locktype please run /locktypes to check available locktypes"
             ),

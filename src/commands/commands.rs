@@ -50,4 +50,6 @@ pub enum Command {
     Paste,
     #[command(description = "Changes chat permissons")]
     Lock,
+    #[command(description = "Unlocks locked permissions in a chat")]
+    Unlock,
 }

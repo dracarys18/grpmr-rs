@@ -76,6 +76,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Ud => ud(&cx).await?,
             Command::Paste => dogbin(&cx).await?,
             Command::Lock => lock(&cx).await?,
+            Command::Unlock => unlock(&cx).await?,
         }
     }
     Ok(())
