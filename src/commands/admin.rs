@@ -832,3 +832,9 @@ pub async fn unlock(cx: &Cxt) -> TgErr<()> {
     }
     Ok(())
 }
+
+pub async fn locktypes(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(is_group(cx),)?;
+    cx.reply_to("Following Locktypes are available: \n<code>all\ntext\nsticker\ngif\nurl\nweb\nmedia\npoll\n</code>").parse_mode(ParseMode::Html).await?;
+    Ok(())
+}

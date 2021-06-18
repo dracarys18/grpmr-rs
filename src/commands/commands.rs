@@ -52,4 +52,6 @@ pub enum Command {
     Lock,
     #[command(description = "Unlocks locked permissions in a chat")]
     Unlock,
+    #[command(description = "Available locktypes")]
+    Locktypes,
 }
