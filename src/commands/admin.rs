@@ -1,7 +1,7 @@
 use crate::util::{
-    can_pin_messages, can_promote_members, can_send_text, extract_text_id_from_reply, get_bot_id,
-    get_time, is_group, is_user_restricted, sudo_or_owner_filter, user_should_be_admin,
-    user_should_restrict, PinMode, TimeUnit,
+    can_pin_messages, can_promote_members, can_send_text, can_user_restrict,
+    extract_text_id_from_reply, get_bot_id, get_time, is_group, is_user_restricted,
+    sudo_or_owner_filter, user_should_be_admin, user_should_restrict, LockType, PinMode, TimeUnit,
 };
 use crate::{Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use std::str::FromStr;
@@ -681,5 +681,78 @@ pub async fn adminlist(cx: &Cxt) -> TgErr<()> {
     ))
     .parse_mode(ParseMode::Html)
     .await?;
+    Ok(())
+}
+
+pub async fn lock(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),                                           //Should be a group
+        user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
+        user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
+    )?;
+    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    if args.is_empty() {
+        cx.reply_to("What should I lock?").await?;
+        return Ok(());
+    }
+    let locktype = args[0].to_lowercase().parse::<LockType>().unwrap();
+    if let Ok(chat) = cx.requester.get_chat(cx.chat_id()).await {
+        match locktype {
+            LockType::Text => {
+                cx.requester
+                    .set_chat_permissions(cx.chat_id(), ChatPermissions::default())
+                    .await?;
+                cx.reply_to(format!("{}", locktype))
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+            }
+            LockType::Other => {
+                let perm = chat.permissions().unwrap().can_send_other_messages(false);
+                cx.requester
+                    .set_chat_permissions(cx.chat_id(), perm)
+                    .await?;
+                cx.reply_to(format!("{}", locktype))
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+            }
+            LockType::Media => {
+                let perm = chat
+                    .permissions()
+                    .unwrap()
+                    .can_send_media_messages(false)
+                    .can_send_other_messages(false)
+                    .can_add_web_page_previews(false);
+                cx.requester
+                    .set_chat_permissions(cx.chat_id(), perm)
+                    .await?;
+                cx.reply_to(format!("{}", locktype))
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+            }
+            LockType::Poll => {
+                let perm = chat.permissions().unwrap().can_send_polls(false);
+                cx.requester
+                    .set_chat_permissions(cx.chat_id(), perm)
+                    .await?;
+                cx.reply_to(format!("{}", locktype))
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+            }
+            LockType::Web => {
+                let perm = chat.permissions().unwrap().can_add_web_page_previews(false);
+                cx.requester
+                    .set_chat_permissions(cx.chat_id(), perm)
+                    .await?;
+                cx.reply_to(format!("{}", locktype))
+                    .parse_mode(ParseMode::Html)
+                    .await?;
+            }
+            LockType::Error => {
+                cx.reply_to(format!("{}", locktype)).await?;
+            }
+        }
+    } else {
+        cx.reply_to("Can't get info about the chat").await?;
+    }
     Ok(())
 }

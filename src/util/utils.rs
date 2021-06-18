@@ -388,3 +388,46 @@ pub fn get_time(unit: &TimeUnit) -> u64 {
         TimeUnit::Days(t) => t * 3600 * 24,
     }
 }
+
+pub enum LockType {
+    Text,
+    Other,
+    Media,
+    Poll,
+    Web,
+    Error,
+}
+
+impl FromStr for LockType {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        let ret = match s {
+            "all" | "text" => LockType::Text,
+            "sticker" | "gif" => LockType::Other,
+            "url" | "web" => LockType::Web,
+            "media" => LockType::Media,
+            "poll" => LockType::Poll,
+            _ => LockType::Error,
+        };
+        Ok(ret)
+    }
+}
+
+impl Display for LockType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            &LockType::Text => write!(f, "Muted <i>text</i> for Non-admins"),
+            &LockType::Other => write!(f, "Muted <i>sticker,gif,game</i> for Non-Admins"),
+            &LockType::Media => write!(
+                f,
+                "Muted <i>Media(photos,animations,documents,stickers/gif,video)</i> for Non-Admins"
+            ),
+            &LockType::Web => write!(f, "Muted <i>URL</i> previewing for Non-Admins"),
+            &LockType::Poll => write!(f, "Muted <i>Polls</i> for Non-Admins"),
+            &LockType::Error => write!(
+                f,
+                "Invalid locktype please run /locktypes to check available locktypes"
+            ),
+        }
+    }
+}
