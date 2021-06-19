@@ -16,10 +16,12 @@ use modules::Command;
 use std::error::Error;
 use teloxide::prelude::*;
 use teloxide::utils::command::BotCommand as Cmd;
+use tokio_stream::wrappers::UnboundedReceiverStream;
 
-use crate::util::{enforce_gban, is_group};
+use crate::util::enforce_gban;
 
 pub type Cxt = UpdateWithCx<AutoSend<Bot>, Message>;
+pub type Ctx = UpdateWithCx<AutoSend<Bot>, CallbackQuery>;
 pub type TgErr<T> = anyhow::Result<T>;
 
 lazy_static! {
@@ -44,7 +46,7 @@ async fn get_mdb() -> mongodb::Database {
 async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
     let mngdb = get_mdb().await;
     tokio::try_join!(save_user(&cx, &mngdb), save_chat(&cx, &mngdb))?;
-    if is_group(&cx).await.is_ok() {
+    if cx.update.chat.is_group() || cx.update.chat.is_supergroup() {
         tokio::try_join!(enforce_gban(&cx))?;
     }
     let txt = cx.update.text();
@@ -89,12 +91,27 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
     }
     Ok(())
 }
+async fn answer_callback(cx: Ctx) -> TgErr<()> {
+    Ok(())
+}
 async fn run() {
     dotenv::dotenv().ok();
     teloxide::enable_logging!();
     let bot = Bot::from_env().auto_send();
     log::info!("Bot started");
-    teloxide::repl(bot.clone(), answer).await;
+    Dispatcher::new(bot)
+        .messages_handler(|rx: DispatcherHandlerRx<AutoSend<Bot>, Message>| {
+            UnboundedReceiverStream::new(rx).for_each_concurrent(None, |cx| async move {
+                answer(cx).await.log_on_error().await
+            })
+        })
+        .callback_queries_handler(|rx: DispatcherHandlerRx<AutoSend<Bot>, CallbackQuery>| {
+            UnboundedReceiverStream::new(rx).for_each_concurrent(None, |cx| async move {
+                answer_callback(cx).await.log_on_error().await
+            })
+        })
+        .dispatch()
+        .await;
 }
 #[tokio::main]
 async fn main() {

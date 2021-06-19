@@ -11,6 +11,7 @@ teloxide = { git = "https://github.com/teloxide/teloxide", branch = "dev", featu
 log = "0.4.8"
 pretty_env_logger = "0.4.0"
 tokio = { version =  "1.3.0", features = ["rt-multi-thread", "macros","time"] }
+tokio-stream = "0.1.6"
 mongodb = "2.0.0-beta.1"
 anyhow = "*"
 lazy_static = "*"
