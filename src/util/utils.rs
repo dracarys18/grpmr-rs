@@ -1,4 +1,4 @@
-use crate::database::db_utils::get_userid_from_name;
+use crate::database::db_utils::{get_userid_from_name, is_gbanned};
 use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use anyhow::anyhow;
 use std::fmt::Display;
@@ -300,6 +300,28 @@ pub async fn sudo_or_owner_filter(uid: i64) -> TgErr<()> {
     Err(anyhow!(
         "This command only works for either owner or sudo users"
     ))
+}
+
+pub async fn check_and_gban(cx: &Cxt, user_id: i64) -> TgErr<()> {
+    let db = get_mdb().await;
+    if is_gbanned(&db, &user_id).await? {
+        if let Err(_) = cx.requester.kick_chat_member(cx.chat_id(), user_id).await {
+            return Ok(());
+        }
+        cx.requester.send_message(cx.chat_id(),"This is a Gbanned user trying to sneak inside in my presence. I am banning him right away!").await?;
+    }
+    Ok(())
+}
+
+pub async fn enforce_gban(cx: &Cxt) -> TgErr<()> {
+    if let Some(u) = cx.update.from() {
+        check_and_gban(cx, u.id).await?;
+    } else if let Some(new) = cx.update.new_chat_members() {
+        for u in new {
+            check_and_gban(cx, u.id).await?;
+        }
+    }
+    Ok(())
 }
 pub enum PinMode {
     Loud,

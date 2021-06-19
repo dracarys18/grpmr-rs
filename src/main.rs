@@ -17,6 +17,8 @@ use std::error::Error;
 use teloxide::prelude::*;
 use teloxide::utils::command::BotCommand as Cmd;
 
+use crate::util::{enforce_gban, is_group};
+
 pub type Cxt = UpdateWithCx<AutoSend<Bot>, Message>;
 pub type TgErr<T> = anyhow::Result<T>;
 
@@ -42,6 +44,9 @@ async fn get_mdb() -> mongodb::Database {
 async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
     let mngdb = get_mdb().await;
     tokio::try_join!(save_user(&cx, &mngdb), save_chat(&cx, &mngdb))?;
+    if is_group(&cx).await.is_ok() {
+        tokio::try_join!(enforce_gban(&cx))?;
+    }
     let txt = cx.update.text();
     if txt.is_none() {
         return Ok(());
