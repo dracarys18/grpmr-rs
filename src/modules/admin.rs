@@ -641,8 +641,7 @@ pub async fn invitelink(cx: &Cxt) -> TgErr<()> {
                 ))
                 .parse_mode(ParseMode::Html)
                 .await?;
-            } else {
-                if let Ok(inv) = cx.requester.export_chat_invite_link(cx.chat_id()).await {
+            } else if let Ok(inv) = cx.requester.export_chat_invite_link(cx.chat_id()).await {
                     cx.reply_to(format!(
                         "<b>The invitelink was empty so I have created one for this chat</b>\n{}",
                         inv
@@ -653,7 +652,6 @@ pub async fn invitelink(cx: &Cxt) -> TgErr<()> {
                     cx.reply_to("I don't have enough rights to access the invite link")
                         .await?;
                 }
-            }
         }
         ChatKind::Private(_) => {
             cx.reply_to("I can only create invite links for chats or channels")
