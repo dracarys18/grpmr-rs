@@ -91,25 +91,23 @@ pub async fn get_id(cx: &Cxt) -> TgErr<()> {
                     .parse_mode(ParseMode::Html)
                     .await?;
                 }
+            } else if let Some(u) = user {
+                cx.reply_to(format!(
+                    "{}'s ID is <code>{}</code>",
+                    user_mention(u.id as i32, &u.first_name),
+                    u.id
+                ))
+                .parse_mode(ParseMode::Html)
+                .await?;
             } else {
-                if let Some(u) = user {
-                    cx.reply_to(format!(
-                        "{}'s ID is <code>{}</code>",
-                        user_mention(u.id as i32, &u.first_name),
-                        u.id
-                    ))
-                    .parse_mode(ParseMode::Html)
-                    .await?;
-                } else {
-                    cx.reply_to("This user's dead I can't get his ID").await?;
-                }
+                cx.reply_to("This user's dead I can't get his ID").await?;
             }
         } else if let ChatKind::Private(u) = cx.requester.get_chat(user_id.unwrap()).await?.kind {
             cx.reply_to(format!(
                 "{}'s ID is <code>{}</code>",
                 user_mention(
                     user_id.unwrap() as i32,
-                    &u.first_name.unwrap_or("".to_string())
+                    &u.first_name.unwrap_or_else(|| "".to_string())
                 ),
                 user_id.unwrap()
             ))

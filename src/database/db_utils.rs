@@ -1,4 +1,4 @@
-use crate::db::{Chat, User};
+use crate::database::{Chat, User};
 use crate::{Cxt, TgErr};
 use mongodb::{bson::doc, Database};
 use teloxide::types::ChatKind;
@@ -38,7 +38,7 @@ pub async fn save_user(cx: &Cxt, db: &Database) -> TgErr<()> {
         let uname = user.username.as_ref().map(|s| s.to_lowercase());
         let user = &User {
             user_id: user.id,
-            user_name: uname.unwrap_or("None".to_string()),
+            user_name: uname.unwrap_or_else(|| "None".to_string()),
         };
         insert_user(&db, user).await?;
     }
@@ -64,7 +64,7 @@ pub async fn save_chat(cx: &Cxt, db: &Database) -> TgErr<()> {
             ChatKind::Public(ch) => {
                 let c = Chat {
                     chat_id: chat.id,
-                    chat_name: ch.title.clone().unwrap().to_owned(),
+                    chat_name: ch.title.clone().unwrap(),
                 };
                 insert_chat(db, &c).await?;
             }

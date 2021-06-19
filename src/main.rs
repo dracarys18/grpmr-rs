@@ -1,8 +1,11 @@
 extern crate teloxide;
+mod database;
 mod modules;
-mod db;
 mod util;
 use async_once::AsyncOnce;
+use database::db_utils::{save_chat, save_user};
+use database::Db;
+use lazy_static::lazy_static;
 use modules::admin::*;
 use modules::misc::*;
 use modules::msg_delete::*;
@@ -10,9 +13,6 @@ use modules::start::*;
 use modules::sudo::*;
 use modules::user::*;
 use modules::Command;
-use db::db_utils::{save_chat, save_user};
-use db::Db;
-use lazy_static::lazy_static;
 use std::error::Error;
 use teloxide::prelude::*;
 use teloxide::utils::command::BotCommand as Cmd;
@@ -30,7 +30,7 @@ lazy_static! {
         dotenv::var("TELOXIDE_TOKEN").expect("TELOXIDE_TOKEN is empty");
     pub static ref SUDO_USERS: Vec<i64> = dotenv::var("SUDO_USERS")
         .expect("SUDO_USERS is not defined")
-        .split(",")
+        .split(',')
         .map(|s| s.parse::<i64>().unwrap_or(0))
         .collect::<Vec<i64>>();
     pub static ref MDB: AsyncOnce<mongodb::Database> =

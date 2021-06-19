@@ -15,7 +15,7 @@ pub async fn start_handler(cx: &Cxt) -> TgErr<()> {
         return Ok(());
     }
     cx.reply_to(start_message_pub).await?;
-    return Ok(());
+    Ok(())
 }
 
 pub async fn help_handler(cx: &Cxt) -> TgErr<()> {
