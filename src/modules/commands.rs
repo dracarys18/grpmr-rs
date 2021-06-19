@@ -54,4 +54,10 @@ pub enum Command {
     Unlock,
     #[command(description = "Available locktypes")]
     Locktypes,
+    #[command(description = "Get's list of chats bot is in")]
+    Chatlist,
+    #[command(description = "Gban a user")]
+    Gban,
+    #[command(description = "Ungban a user")]
+    Ungban,
 }

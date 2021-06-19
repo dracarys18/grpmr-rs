@@ -77,6 +77,9 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Lock => lock(&cx).await?,
             Command::Unlock => unlock(&cx).await?,
             Command::Locktypes => locktypes(&cx).await?,
+            Command::Chatlist => chatlist(&cx).await?,
+            Command::Gban => gban(&cx).await?,
+            Command::Ungban => ungban(&cx).await?,
         }
     }
     Ok(())

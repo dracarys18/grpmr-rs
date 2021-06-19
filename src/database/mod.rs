@@ -10,3 +10,8 @@ pub struct Chat {
     pub chat_id: i64,
     pub chat_name: String,
 }
+
+pub struct Gban {
+    pub user_id: i64,
+    pub reason: String,
+}
