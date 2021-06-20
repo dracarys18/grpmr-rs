@@ -1,4 +1,4 @@
-use crate::database::{Chat, Gban, User};
+use super::{Chat, Gban, User, Warn, Warnlimit};
 use crate::{Cxt, TgErr};
 use mongodb::{bson::doc, bson::Bson, Database};
 use teloxide::prelude::StreamExt;
@@ -14,6 +14,12 @@ fn chat_collection(db: &Database) -> mongodb::Collection {
 }
 fn gban_collection(db: &Database) -> mongodb::Collection {
     db.collection("Gban")
+}
+fn warn_collection(db: &Database) -> mongodb::Collection {
+    db.collection("Warn")
+}
+fn warn_limit_collection(db: &Database) -> mongodb::Collection {
+    db.collection("Warnlimit")
 }
 pub async fn insert_user(db: &Database, us: &User) -> DbResult<mongodb::results::UpdateResult> {
     let user = user_collection(db);
@@ -115,4 +121,88 @@ pub async fn is_gbanned(db: &Database, id: &i64) -> DbResult<bool> {
     let gban = gban_collection(db);
     let exist = gban.find_one(doc! {"user_id":id}, None).await?;
     Ok(exist.is_some())
+}
+
+pub async fn insert_warn(db: &Database, w: &Warn) -> DbResult<mongodb::results::UpdateResult> {
+    let warn = warn_collection(db);
+    warn.update_one(
+        doc! {"chat_id":w.chat_id},
+        doc! {"$set":{"user_id":w.user_id,"reason":&w.reason,"count":w.count}},
+        mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build(),
+    )
+    .await
+}
+
+pub async fn get_warn_count(db: &Database, chat_id: i64, user_id: i64) -> DbResult<i64> {
+    let warn = warn_collection(db);
+    let count = warn
+        .find_one(doc! {"chat_id":chat_id,"user_id":user_id}, None)
+        .await?;
+    if count.is_none() {
+        Ok(0 as i64)
+    } else {
+        Ok(count
+            .map(|s| s.get("count").and_then(Bson::as_i64).unwrap())
+            .unwrap())
+    }
+}
+
+pub async fn set_warn_limit(
+    db: &Database,
+    wl: &Warnlimit,
+) -> DbResult<mongodb::results::UpdateResult> {
+    let wc = warn_limit_collection(db);
+    wc.update_one(
+        doc! {"chat_id":wl.chat_id},
+        doc! {"$set":{"limit":wl.limit}},
+        mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build(),
+    )
+    .await
+}
+
+pub async fn get_warn_limit(db: &Database, chat_id: i64) -> DbResult<i64> {
+    let warn = warn_limit_collection(db);
+    let warn_lim = warn.find_one(doc! {"chat_id":chat_id}, None).await?;
+    if warn_lim.is_none() {
+        Ok(-1 as i64)
+    } else {
+        Ok(warn_lim
+            .map(|s| s.get("limit").and_then(Bson::as_i64).unwrap())
+            .unwrap())
+    }
+}
+pub async fn rm_single_warn(
+    db: &Database,
+    chat_id: i64,
+    user_id: i64,
+) -> DbResult<mongodb::results::UpdateResult> {
+    let warn = warn_collection(db);
+    let count = get_warn_count(&db, chat_id, user_id).await?;
+    warn.update_one(
+        doc! {"chat_id":chat_id},
+        doc! {"$set":{"count":count-1}},
+        mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build(),
+    )
+    .await
+}
+pub async fn reset_warn(
+    db: &Database,
+    chat_id: i64,
+    user_id: i64,
+) -> DbResult<mongodb::results::UpdateResult> {
+    let warn = warn_collection(db);
+    warn.update_one(
+        doc! {"chat_id":chat_id},
+        doc! {"$set":{"user_id":user_id,"count":0 as i64}},
+        mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build(),
+    )
+    .await
 }

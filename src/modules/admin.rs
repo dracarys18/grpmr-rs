@@ -1,12 +1,21 @@
+use crate::database::db_utils::{
+    get_warn_count, get_warn_limit, insert_warn, reset_warn, rm_single_warn, set_warn_limit,
+};
+use crate::database::{Warn, Warnlimit};
 use crate::util::{
     can_pin_messages, can_promote_members, can_send_text, extract_text_id_from_reply, get_bot_id,
     get_time, is_group, is_user_restricted, sudo_or_owner_filter, user_should_be_admin,
     user_should_restrict, LockType, PinMode, TimeUnit,
 };
-use crate::{Cxt, TgErr, OWNER_ID, SUDO_USERS};
+use crate::{get_mdb, Ctx, Cxt, TgErr, OWNER_ID, SUDO_USERS};
+use regex::Regex;
 use std::str::FromStr;
+use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::*;
-use teloxide::types::{ChatKind, ChatMemberKind, ChatMemberStatus, ChatPermissions, ParseMode};
+use teloxide::types::{
+    ChatKind, ChatMemberKind, ChatMemberStatus, ChatPermissions, InlineKeyboardButton,
+    InlineKeyboardMarkup, ParseMode,
+};
 use teloxide::utils::command::parse_command;
 use teloxide::utils::html::{user_mention, user_mention_or_link};
 
@@ -833,5 +842,171 @@ pub async fn unlock(cx: &Cxt) -> TgErr<()> {
 pub async fn locktypes(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(is_group(cx),)?;
     cx.reply_to("Following Locktypes are available: \n<code>all\ntext\nsticker\ngif\nurl\nweb\nmedia\npoll\n</code>").parse_mode(ParseMode::Html).await?;
+    Ok(())
+}
+
+pub async fn warn(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),                                           //Should be a group
+        user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
+        user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
+    )?;
+    let bot_id = get_bot_id(&cx).await;
+    let db = get_mdb().await;
+    let (user_id, text) = extract_text_id_from_reply(cx).await;
+    if user_id.is_none() {
+        cx.reply_to("No user was targeted").await?;
+        return Ok(());
+    }
+    if user_id.unwrap() == bot_id {
+        cx.reply_to("I am not gonna warn myself fella! Try using your brain next time!")
+            .await?;
+        return Ok(());
+    }
+
+    if user_id.unwrap() == *OWNER_ID || (*SUDO_USERS).contains(&user_id.unwrap()) {
+        cx.reply_to("I am not gonna warn my owner or my sudo users")
+            .await?;
+        return Ok(());
+    }
+    let reason = text.unwrap_or(String::new());
+    let w_count = get_warn_count(&db, cx.chat_id(), user_id.unwrap()).await?;
+    let lim = get_warn_limit(&db, cx.chat_id()).await?;
+    if lim == -1 {
+        cx.reply_to("Please set warn limit for this chat before warning")
+            .await?;
+        return Ok(());
+    }
+    let warn = &Warn {
+        chat_id: cx.chat_id(),
+        user_id: user_id.unwrap(),
+        reason: reason.clone(),
+        count: (w_count + 1) as u64,
+    };
+    if let Ok(mem) = cx
+        .requester
+        .get_chat_member(cx.chat_id(), user_id.unwrap())
+        .await
+    {
+        if (w_count + 1) >= lim {
+            cx.requester
+                .kick_chat_member(cx.chat_id(), user_id.unwrap())
+                .await?;
+            cx.reply_to(format!(
+                "That's it get out ({}\\{}) warns",
+                &w_count + 1,
+                &lim
+            ))
+            .await?;
+            reset_warn(&db, cx.chat_id(), user_id.unwrap()).await?;
+            return Ok(());
+        }
+        let rm_warn_data = format!("rm_warn({})", cx.chat_id());
+        let warn_button = InlineKeyboardButton::callback("Remove Warn".to_string(), rm_warn_data);
+        insert_warn(&db, warn).await?;
+        cx.reply_to(format!(
+            "Warned {}({}\\{})\nReason:{}",
+            user_mention_or_link(&mem.user),
+            &w_count + 1,
+            &lim,
+            &reason
+        ))
+        .reply_markup(InlineKeyboardMarkup::default().append_row(vec![warn_button]))
+        .await?;
+    } else {
+        cx.reply_to("Can't get info about the user").await?;
+    }
+    Ok(())
+}
+
+pub async fn handle_unwarn_button(cx: &Ctx) -> TgErr<()> {
+    let db = get_mdb().await;
+    let data = &cx.update.data;
+    if let Some(d) = data {
+        let re = Regex::new(r#"rm_warn\((.+?)\)"#).unwrap();
+        let caps = re.captures(&d).unwrap();
+        let chat_id = caps
+            .get(1)
+            .map_or(0 as i64, |s| s.as_str().parse::<i64>().unwrap());
+        let user_id = cx.update.from.id;
+        let chatmem = cx.requester.get_chat_member(chat_id, user_id).await?;
+        let count = get_warn_count(&db, chat_id, user_id).await?;
+        match chatmem.status() {
+            ChatMemberStatus::Administrator | ChatMemberStatus::Creator => {
+                if count == 0 || count.is_negative() {
+                    cx.requester
+                        .edit_message_text(
+                            chat_id,
+                            cx.update.message.clone().unwrap().id,
+                            format!("Warn is alredy removed"),
+                        )
+                        .await?;
+                    return Ok(());
+                }
+                rm_single_warn(&db, chat_id, user_id).await?;
+                cx.requester
+                    .edit_message_text(
+                        chat_id,
+                        cx.update.message.clone().unwrap().id,
+                        format!("Warn Removed by {}", user_mention_or_link(&cx.update.from)),
+                    )
+                    .await?;
+            }
+            _ => {
+                return Ok(());
+            }
+        }
+    }
+    Ok(())
+}
+pub async fn warn_limit(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),                                           //Should be a group
+        user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
+        user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
+    )?;
+    let db = get_mdb().await;
+    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    if args.is_empty() {
+        cx.reply_to("Send proper warn limit").await?;
+        return Ok(());
+    }
+    let limit = args[0].parse::<u64>().ok().unwrap_or(0);
+    let wl = &Warnlimit {
+        chat_id: cx.chat_id(),
+        limit: limit,
+    };
+    set_warn_limit(&db, wl).await?;
+    cx.reply_to(format!("Warn limit set to {}", limit)).await?;
+    Ok(())
+}
+
+pub async fn reset_warns(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),
+        user_should_be_admin(cx, cx.update.from().unwrap().id),
+    )?;
+    let db = get_mdb().await;
+    let (user_id, _) = extract_text_id_from_reply(cx).await;
+    let count = get_warn_count(&db, cx.chat_id(), user_id.unwrap()).await?;
+    if let Ok(member) = cx
+        .requester
+        .get_chat_member(cx.chat_id(), user_id.unwrap())
+        .await
+    {
+        if count >= 0 {
+            reset_warn(&db, cx.chat_id(), user_id.unwrap()).await?;
+            cx.reply_to(format!(
+                "Warns has been reset for the user {}",
+                user_mention_or_link(&member.user)
+            ))
+            .await?;
+        } else {
+            cx.reply_to("User was not warned even once").await?;
+        }
+    } else {
+        cx.reply_to("This user is not in the chat I can't unwarn him ")
+            .await?;
+    }
     Ok(())
 }

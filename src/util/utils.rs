@@ -81,7 +81,7 @@ pub fn extract_id_from_reply(cx: &Cxt) -> (Option<i64>, Option<String>) {
             if res.len() < 2 {
                 return (Some(user.id), Some("".to_owned()));
             }
-            return (Some(user.id), Some(res[1].to_owned()));
+            return (Some(user.id), Some("".to_owned()));
         }
         return (Some(user.id), None);
     }

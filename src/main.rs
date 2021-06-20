@@ -13,6 +13,7 @@ use modules::start::*;
 use modules::sudo::*;
 use modules::user::*;
 use modules::Command;
+use regex::Regex;
 use std::error::Error;
 use teloxide::prelude::*;
 use teloxide::utils::command::BotCommand as Cmd;
@@ -87,11 +88,21 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Chatlist => chatlist(&cx).await?,
             Command::Gban => gban(&cx).await?,
             Command::Ungban => ungban(&cx).await?,
+            Command::Warn => warn(&cx).await?,
+            Command::Warnlimit => warn_limit(&cx).await?,
+            Command::Resetwarns => reset_warns(&cx).await?,
         }
     }
     Ok(())
 }
 async fn answer_callback(cx: Ctx) -> TgErr<()> {
+    let data = &cx.update.data;
+    if let Some(d) = data {
+        let warn_re = Regex::new(r#"rm_warn\((.+?)\)"#).unwrap();
+        if warn_re.is_match(&d) {
+            handle_unwarn_button(&cx).await?;
+        }
+    }
     Ok(())
 }
 async fn run() {
