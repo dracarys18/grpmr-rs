@@ -13,7 +13,7 @@ use std::str::FromStr;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::*;
 use teloxide::types::{
-    ChatKind, ChatMemberKind, ChatMemberStatus, ChatPermissions, InlineKeyboardButton,
+    ChatKind, ChatMemberStatus, ChatPermissions, InlineKeyboardButton,
     InlineKeyboardMarkup, ParseMode,
 };
 use teloxide::utils::command::parse_command;
@@ -47,13 +47,19 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if let ChatMemberKind::Kicked(_) = mem.kind {
+        if let ChatMemberStatus::Kicked = mem.status() {
             cx.reply_to("This user is already banned here!").await?;
             return Ok(());
         }
-        if let ChatMemberKind::Administrator(_) | ChatMemberKind::Creator(_) = mem.kind {
+        if let ChatMemberStatus::Creator = mem.status() {
             cx.reply_to("I am not gonna ban an Admin Here!").await?;
             return Ok(());
+        }
+        if let ChatMemberStatus::Administrator = mem.status() {
+            if !mem.can_be_edited() {
+                cx.reply_to("I am not gonna ban an Admin Here!").await?;
+                return Ok(());
+            }
         }
     } else {
         cx.reply_to("I can't seem to get info for this user")
@@ -81,6 +87,7 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
+    let bot_id = get_bot_id(cx).await;
     if user_id.is_none() {
         cx.reply_to("No user was targetted").await?;
         return Ok(());
@@ -91,17 +98,33 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
         return Ok(());
     }
 
+    if user_id.unwrap() == bot_id {
+        cx.reply_to("I am not gonna mute myself fella! Try using your brain next time!")
+            .await?;
+        return Ok(());
+    }
+
+    if user_id.unwrap() == *OWNER_ID || (*SUDO_USERS).contains(&user_id.unwrap()) {
+        cx.reply_to("I am not gonna mute my owner or my sudo users")
+            .await?;
+        return Ok(());
+    }
+
     if let Ok(mem) = cx
         .requester
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if matches!(
-            mem.status(),
-            ChatMemberStatus::Administrator | ChatMemberStatus::Creator
-        ) {
+        if matches!(mem.status(), ChatMemberStatus::Creator) {
             cx.reply_to("I am not gonna mute an admin here").await?;
             return Ok(());
+        }
+
+        if matches!(mem.status(), ChatMemberStatus::Administrator) {
+            if !mem.can_be_edited() {
+                cx.reply_to("I am not gonna mute an admin here").await?;
+                return Ok(());
+            }
         }
 
         if matches!(
@@ -153,6 +176,7 @@ pub async fn temp_ban(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
+    let bot_id = get_bot_id(cx).await;
     if user_id.is_none() {
         cx.reply_to("No user was targetted").await?;
         return Ok(());
@@ -163,17 +187,32 @@ pub async fn temp_ban(cx: &Cxt) -> TgErr<()> {
         return Ok(());
     }
 
+    if user_id.unwrap() == bot_id {
+        cx.reply_to("I am not gonna ban myself fella! Try using your brain next time!")
+            .await?;
+        return Ok(());
+    }
+    if user_id.unwrap() == *OWNER_ID || (*SUDO_USERS).contains(&user_id.unwrap()) {
+        cx.reply_to("I am not gonna ban my owner or my sudo users")
+            .await?;
+        return Ok(());
+    }
+
     if let Ok(mem) = cx
         .requester
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if matches!(
-            mem.status(),
-            ChatMemberStatus::Administrator | ChatMemberStatus::Creator
-        ) {
+        if matches!(mem.status(), ChatMemberStatus::Creator) {
             cx.reply_to("I am not gonna ban an admin here").await?;
             return Ok(());
+        }
+
+        if matches!(mem.status(), ChatMemberStatus::Administrator) {
+            if !mem.can_be_edited() {
+                cx.reply_to("I am not gonna ban an admin here").await?;
+                return Ok(());
+            }
         }
 
         if matches!(mem.status(), ChatMemberStatus::Kicked) {
@@ -277,9 +316,15 @@ pub async fn mute(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if let ChatMemberKind::Administrator(_) | ChatMemberKind::Creator(_) = mem.kind {
+        if matches!(mem.status(), ChatMemberStatus::Creator) {
             cx.reply_to("I am not gonna mute an Admin Here!").await?;
             return Ok(());
+        }
+        if matches!(mem.status(), ChatMemberStatus::Administrator) {
+            if !mem.can_be_edited() {
+                cx.reply_to("I am not gonna mute an Admin Here!").await?;
+                return Ok(());
+            }
         }
     } else {
         cx.reply_to("I can't seem to get info for this user")
@@ -373,13 +418,22 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if let ChatMemberStatus::Kicked | ChatMemberStatus::Left = mem.status() {
+        if matches!(
+            mem.status(),
+            ChatMemberStatus::Kicked | ChatMemberStatus::Left
+        ) {
             cx.reply_to("This user is already gone mate!").await?;
             return Ok(());
         }
-        if let ChatMemberKind::Administrator(_) | ChatMemberKind::Creator(_) = mem.kind {
+        if matches!(mem.status(), ChatMemberStatus::Creator) {
             cx.reply_to("I am not gonna kick an Admin Here!").await?;
             return Ok(());
+        }
+        if matches!(mem.status(), ChatMemberStatus::Administrator) {
+            if !mem.can_be_edited() {
+                cx.reply_to("I am not gonna kick an Admin Here!").await?;
+                return Ok(());
+            }
         }
     } else {
         cx.reply_to("I can't seem to get info for this user")
@@ -412,9 +466,15 @@ pub async fn kickme(cx: &Cxt) -> TgErr<()> {
             return Ok(());
         }
         if let Ok(mem) = cx.requester.get_chat_member(cx.chat_id(), user_id).await {
-            if let ChatMemberKind::Administrator(_) | ChatMemberKind::Creator(_) = mem.kind {
+            if matches!(mem.status(), ChatMemberStatus::Creator) {
                 cx.reply_to("I am not gonna kick an Admin Here!").await?;
                 return Ok(());
+            }
+            if matches!(mem.status(), ChatMemberStatus::Administrator) {
+                if !mem.can_be_edited() {
+                    cx.reply_to("I am not gonna kick an Admin Here!").await?;
+                    return Ok(());
+                }
             }
         } else {
             cx.reply_to("Can't kick the user").await?;
