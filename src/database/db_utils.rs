@@ -168,7 +168,13 @@ pub async fn get_warn_limit(db: &Database, chat_id: i64) -> DbResult<i64> {
     let warn = warn_limit_collection(db);
     let warn_lim = warn.find_one(doc! {"chat_id":chat_id}, None).await?;
     if warn_lim.is_none() {
-        Ok(-1 as i64)
+        //set default limit to 3
+        let wl = &Warnlimit{
+            chat_id: chat_id,
+            limit: 3 as u64,
+        };
+        set_warn_limit(db, wl).await?;
+        Ok(3 as i64)
     } else {
         Ok(warn_lim
             .map(|s| s.get("limit").and_then(Bson::as_i64).unwrap())
