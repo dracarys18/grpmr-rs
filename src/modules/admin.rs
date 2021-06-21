@@ -1088,3 +1088,37 @@ pub async fn reset_warns(cx: &Cxt) -> TgErr<()> {
     }
     Ok(())
 }
+
+pub async fn warns(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),
+        user_should_be_admin(cx, cx.update.from().unwrap().id),
+    )?;
+    let db = get_mdb().await;
+    let (user_id, _) = extract_text_id_from_reply(cx).await;
+    if user_id.is_none() {
+        cx.reply_to("No user was targetted").await?;
+        return Ok(());
+    }
+    if let Ok(chatmem) = cx
+        .requester
+        .get_chat_member(cx.chat_id(), user_id.unwrap())
+        .await
+    {
+        let limit = get_warn_limit(&db, cx.chat_id()).await?;
+        let count = get_warn_count(&db, cx.chat_id(), user_id.unwrap()).await?;
+        if count <= 0 {
+            cx.reply_to("This user got no warnings").await?;
+            return Ok(());
+        }
+        cx.reply_to(format!(
+            "User {} got {}/{} warnings",
+            user_mention(user_id.unwrap() as i32, &chatmem.user.full_name()),
+            count,
+            limit
+        ))
+        .parse_mode(ParseMode::Html)
+        .await?;
+    }
+    Ok(())
+}

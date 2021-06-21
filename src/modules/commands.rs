@@ -66,4 +66,6 @@ pub enum Command {
     Warnlimit,
     #[command(description = "Resets user's warnings")]
     Resetwarns,
+    #[command(description = "Counts the number of warnings")]
+    Warns,
 }

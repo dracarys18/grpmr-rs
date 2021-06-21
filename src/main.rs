@@ -91,6 +91,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Warn => warn(&cx).await?,
             Command::Warnlimit => warn_limit(&cx).await?,
             Command::Resetwarns => reset_warns(&cx).await?,
+            Command::Warns => warns(&cx).await?,
         }
     }
     Ok(())
