@@ -1,5 +1,5 @@
 use crate::database::{
-    db_utils::{gban_user, get_all_chats, get_gban_reason, is_gbanned, set_gbanstat, ungban_user},
+    db_utils::{gban_user, get_all_chats, is_gbanned, set_gbanstat, ungban_user},
     Gban, GbanStat,
 };
 use crate::util::{
@@ -9,7 +9,7 @@ use crate::util::{
 use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::*;
-use teloxide::types::{ChatKind, ParseMode};
+use teloxide::types::{ChatKind, ChatMemberStatus, ParseMode};
 use teloxide::utils::command::parse_command;
 use teloxide::utils::html;
 
@@ -110,10 +110,18 @@ pub async fn gban(cx: &Cxt) -> TgErr<()> {
     gban_user(&db, gb).await?;
     let chats = get_all_chats(&db).await?;
     for c in chats {
-        if let Err(_) = cx.requester.kick_chat_member(c, user_id.unwrap()).await {
-            cx.reply_to("Couldn't gban the user").await?;
-            ungban_user(&db, &user_id.unwrap()).await?;
-            return Ok(());
+        if let Ok(chatmem) = cx.requester.get_chat_member(c, user_id.unwrap()).await {
+            if matches!(
+                chatmem.status(),
+                ChatMemberStatus::Administrator
+                    | ChatMemberStatus::Creator
+                    | ChatMemberStatus::Kicked
+            ) {
+                continue;
+            }
+            if let Err(_) = cx.requester.kick_chat_member(c, user_id.unwrap()).await {
+                continue;
+            }
         }
     }
     cx.requester
@@ -145,17 +153,16 @@ pub async fn ungban(cx: &Cxt) -> TgErr<()> {
         return Ok(());
     }
     if is_gbanned(&db, &user_id.unwrap()).await? {
-        let gb = &Gban {
-            user_id: user_id.unwrap(),
-            reason: get_gban_reason(&db, &user_id.unwrap()).await?,
-        };
         ungban_user(&db, &user_id.unwrap()).await?;
         let chats = get_all_chats(&db).await?;
         let msg = cx.reply_to("Ungbanning the poor fucker").await?;
         for c in chats {
-            if let Err(_) = cx.requester.unban_chat_member(c, user_id.unwrap()).await {
-                cx.reply_to("Couldn't ungban the user").await?;
-                gban_user(&db, gb).await?;
+            if let Ok(mem) = cx.requester.get_chat_member(c, user_id.unwrap()).await {
+                if matches!(mem.status(), ChatMemberStatus::Kicked) {
+                    if let Err(_) = cx.requester.unban_chat_member(c, user_id.unwrap()).await {
+                        continue;
+                    }
+                }
             }
         }
         cx.requester
