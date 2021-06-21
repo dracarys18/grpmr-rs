@@ -947,11 +947,6 @@ pub async fn warn(cx: &Cxt) -> TgErr<()> {
     let reason = text.unwrap_or(String::new());
     let w_count = get_warn_count(&db, cx.chat_id(), user_id.unwrap()).await?;
     let lim = get_warn_limit(&db, cx.chat_id()).await?;
-    if lim == -1 {
-        cx.reply_to("Please set warn limit for this chat before warning")
-            .await?;
-        return Ok(());
-    }
     let warn = &Warn {
         chat_id: cx.chat_id(),
         user_id: user_id.unwrap(),
@@ -1049,7 +1044,13 @@ pub async fn warn_limit(cx: &Cxt) -> TgErr<()> {
         cx.reply_to("Send proper warn limit").await?;
         return Ok(());
     }
-    let limit = args[0].parse::<u64>().ok().unwrap_or(0);
+    let limit = match args[0].parse::<u64>() {
+        Ok(val) => val,
+        Err(_) => {
+            cx.reply_to("Send a proper warn limit you idiot!").await?;
+            return Ok(());
+        }
+    };
     let wl = &Warnlimit {
         chat_id: cx.chat_id(),
         limit: limit,
