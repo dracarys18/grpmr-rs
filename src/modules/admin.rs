@@ -976,7 +976,7 @@ pub async fn warn(cx: &Cxt) -> TgErr<()> {
             reset_warn(&db, cx.chat_id(), user_id.unwrap()).await?;
             return Ok(());
         }
-        let rm_warn_data = format!("rm_warn({})", cx.chat_id());
+        let rm_warn_data = format!("rm_warn({},{})", cx.chat_id(), user_id.unwrap());
         let warn_button = InlineKeyboardButton::callback("Remove Warn".to_string(), rm_warn_data);
         insert_warn(&db, warn).await?;
         cx.reply_to(format!(
@@ -998,14 +998,17 @@ pub async fn handle_unwarn_button(cx: &Ctx) -> TgErr<()> {
     let db = get_mdb().await;
     let data = &cx.update.data;
     if let Some(d) = data {
-        let re = Regex::new(r#"rm_warn\((.+?)\)"#).unwrap();
+        let re = Regex::new(r#"rm_warn\((.+?),(.+?)\)"#).unwrap();
         let caps = re.captures(&d).unwrap();
         let chat_id = caps
             .get(1)
             .map_or(0 as i64, |s| s.as_str().parse::<i64>().unwrap());
         let user_id = cx.update.from.id;
+        let warned_user = caps
+            .get(2)
+            .map_or(0 as i64, |s| s.as_str().parse::<i64>().unwrap());
         let chatmem = cx.requester.get_chat_member(chat_id, user_id).await?;
-        let count = get_warn_count(&db, chat_id, user_id).await?;
+        let count = get_warn_count(&db, chat_id, warned_user).await?;
         match chatmem.status() {
             ChatMemberStatus::Administrator | ChatMemberStatus::Creator => {
                 if count == 0 || count.is_negative() {
@@ -1018,7 +1021,7 @@ pub async fn handle_unwarn_button(cx: &Ctx) -> TgErr<()> {
                         .await?;
                     return Ok(());
                 }
-                rm_single_warn(&db, chat_id, user_id).await?;
+                rm_single_warn(&db, chat_id, warned_user).await?;
                 cx.requester
                     .edit_message_text(
                         chat_id,
