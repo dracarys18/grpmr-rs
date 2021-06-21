@@ -1,4 +1,4 @@
-use super::{Chat, Gban, User, Warn, Warnlimit};
+use super::{Chat, Gban, GbanStat, User, Warn, Warnlimit};
 use crate::{Cxt, TgErr};
 use mongodb::{bson::doc, bson::Bson, Database};
 use teloxide::prelude::StreamExt;
@@ -20,6 +20,9 @@ fn warn_collection(db: &Database) -> mongodb::Collection {
 }
 fn warn_limit_collection(db: &Database) -> mongodb::Collection {
     db.collection("Warnlimit")
+}
+fn gbanstat_collection(db: &Database) -> mongodb::Collection {
+    db.collection("GbanStat")
 }
 pub async fn insert_user(db: &Database, us: &User) -> DbResult<mongodb::results::UpdateResult> {
     let user = user_collection(db);
@@ -117,12 +120,44 @@ pub async fn get_gban_reason(db: &Database, id: &i64) -> DbResult<String> {
         .map(|r| r.get("reason").and_then(Bson::as_str).unwrap().to_string())
         .unwrap())
 }
+
 pub async fn is_gbanned(db: &Database, id: &i64) -> DbResult<bool> {
     let gban = gban_collection(db);
     let exist = gban.find_one(doc! {"user_id":id}, None).await?;
     Ok(exist.is_some())
 }
 
+pub async fn set_gbanstat(
+    db: &Database,
+    gs: &GbanStat,
+) -> DbResult<mongodb::results::UpdateResult> {
+    let gbanstat = gbanstat_collection(db);
+    gbanstat
+        .update_one(
+            doc! {"chat_id":gs.chat_id},
+            doc! {"$set":{"is_on":gs.is_on}},
+            mongodb::options::UpdateOptions::builder()
+                .upsert(true)
+                .build(),
+        )
+        .await
+}
+
+pub async fn get_gbanstat(db: &Database, chat_id: i64) -> DbResult<bool> {
+    let gbanstat = gbanstat_collection(db);
+    let stat = gbanstat.find_one(doc! {"chat_id":chat_id}, None).await?;
+    if stat.is_none() {
+        let gs = &GbanStat {
+            chat_id: chat_id,
+            is_on: true,
+        };
+        set_gbanstat(db, gs).await?;
+        return Ok(true);
+    }
+    Ok(stat
+        .map(|d| d.get("is_on").and_then(Bson::as_bool).unwrap())
+        .unwrap())
+}
 pub async fn insert_warn(db: &Database, w: &Warn) -> DbResult<mongodb::results::UpdateResult> {
     let warn = warn_collection(db);
     warn.update_one(

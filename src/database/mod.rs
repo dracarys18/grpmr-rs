@@ -16,6 +16,11 @@ pub struct Gban {
     pub reason: String,
 }
 
+pub struct GbanStat {
+    pub chat_id: i64,
+    pub is_on: bool,
+}
+
 pub struct Warn {
     pub chat_id: i64,
     pub user_id: i64,

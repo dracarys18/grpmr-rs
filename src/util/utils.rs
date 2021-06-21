@@ -1,4 +1,4 @@
-use crate::database::db_utils::{get_userid_from_name, is_gbanned};
+use crate::database::db_utils::{get_gbanstat, get_userid_from_name, is_gbanned};
 use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use anyhow::anyhow;
 use std::fmt::Display;
@@ -321,7 +321,7 @@ pub async fn sudo_or_owner_filter(uid: i64) -> TgErr<()> {
 
 pub async fn check_and_gban(cx: &Cxt, user_id: i64) -> TgErr<()> {
     let db = get_mdb().await;
-    if is_gbanned(&db, &user_id).await? {
+    if is_gbanned(&db, &user_id).await? && get_gbanstat(&db, cx.chat_id()).await? {
         if let Err(_) = cx.requester.kick_chat_member(cx.chat_id(), user_id).await {
             return Ok(());
         }
@@ -469,6 +469,23 @@ impl Display for LockType {
                 f,
                 "Invalid locktype please run /locktypes to check available locktypes"
             ),
+        }
+    }
+}
+
+pub enum GbanStats {
+    On,
+    Off,
+    Error,
+}
+
+impl FromStr for GbanStats {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        match s {
+            "yes" | "on" => Ok(GbanStats::On),
+            "no" | "off" => Ok(GbanStats::Off),
+            _ => Ok(GbanStats::Error),
         }
     }
 }

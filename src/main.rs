@@ -88,6 +88,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Chatlist => chatlist(&cx).await?,
             Command::Gban => gban(&cx).await?,
             Command::Ungban => ungban(&cx).await?,
+            Command::Gbanstat => gbanstat(&cx).await?,
             Command::Warn => warn(&cx).await?,
             Command::Warnlimit => warn_limit(&cx).await?,
             Command::Resetwarns => reset_warns(&cx).await?,

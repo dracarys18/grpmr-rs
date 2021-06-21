@@ -60,6 +60,8 @@ pub enum Command {
     Gban,
     #[command(description = "Ungban a user")]
     Ungban,
+    #[command(description = "Turns Gbans for a group on/off")]
+    Gbanstat,
     #[command(description = "Warns a user")]
     Warn,
     #[command(description = "Sets warn limit")]

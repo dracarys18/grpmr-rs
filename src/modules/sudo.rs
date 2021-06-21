@@ -1,10 +1,10 @@
-use crate::util::{extract_text_id_from_reply, get_bot_id, owner_filter};
-use crate::{
-    database::{
-        db_utils::{gban_user, get_all_chats, get_gban_reason, is_gbanned, ungban_user},
-        Gban,
-    },
-    util::sudo_or_owner_filter,
+use crate::database::{
+    db_utils::{gban_user, get_all_chats, get_gban_reason, is_gbanned, set_gbanstat, ungban_user},
+    Gban, GbanStat,
+};
+use crate::util::{
+    extract_text_id_from_reply, get_bot_id, is_group, owner_filter, sudo_or_owner_filter,
+    user_should_be_admin, GbanStats,
 };
 use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use teloxide::payloads::SendMessageSetters;
@@ -164,6 +164,49 @@ pub async fn ungban(cx: &Cxt) -> TgErr<()> {
     } else {
         cx.reply_to("Why are you trying to ungban the user who's not even gbanned")
             .await?;
+    }
+    Ok(())
+}
+
+pub async fn gbanstat(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),
+        user_should_be_admin(cx, cx.update.from().unwrap().id),
+    )?;
+    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let db = get_mdb().await;
+    if args.is_empty() {
+        cx.reply_to("What should I do with this?").await?;
+        return Ok(());
+    }
+    let gstat = args[0].parse::<GbanStats>().unwrap();
+    match gstat {
+        GbanStats::On => {
+            let gs = &GbanStat {
+                chat_id: cx.chat_id(),
+                is_on: true,
+            };
+            set_gbanstat(&db, gs).await?;
+            cx.reply_to(
+                "I have enabled Gbans for this chat you will be more protected from trolls now",
+            )
+            .await?;
+        }
+        GbanStats::Off => {
+            let gs = &GbanStat {
+                chat_id: cx.chat_id(),
+                is_on: false,
+            };
+            set_gbanstat(&db, gs).await?;
+            cx.reply_to(
+                "I have disabled Gbans for this chat you will be less protected from trolls though",
+            )
+            .await?;
+        }
+        GbanStats::Error => {
+            cx.reply_to("That's an invalid gbanstat input valid one's are (yes/on),(no,off)")
+                .await?;
+        }
     }
     Ok(())
 }
