@@ -26,7 +26,8 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
     let bot_id = get_bot_id(&cx).await;
-    let (user_id, _text) = extract_text_id_from_reply(cx).await;
+    let (user_id, text) = extract_text_id_from_reply(cx).await;
+    let reason = text.unwrap_or(String::from("None"));
     if user_id.is_none() {
         cx.reply_to("No user was targeted").await?;
         return Ok(());
@@ -72,7 +73,7 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
         .await
         .unwrap()
         .user;
-    let ban_text = format!("<b>Banned</b>\n<b>User:</b>{}", user_mention_or_link(&user));
+    let ban_text = format!("<b>Banned</b>\n<b>User:</b>{}\n\n<i>Reason:</i> {}", user_mention_or_link(&user),reason);
     cx.requester
         .kick_chat_member(cx.chat_id(), user_id.unwrap())
         .await?;
@@ -295,7 +296,7 @@ pub async fn mute(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
     let bot_id = get_bot_id(&cx).await;
-    let (user_id, _text) = extract_text_id_from_reply(cx).await;
+    let (user_id, text) = extract_text_id_from_reply(cx).await;
     if user_id.is_none() {
         cx.reply_to("No user was targeted").await?;
         return Ok(());
@@ -341,7 +342,8 @@ pub async fn mute(cx: &Cxt) -> TgErr<()> {
         cx.reply_to("User is already restricted").await?;
         return Ok(());
     }
-    let mute_text = format!("<b>Muted</b>\n<b>User:</b>{}", user_mention_or_link(&user));
+    let reason = text.unwrap_or(String::from("None"));
+    let mute_text = format!("<b>Muted</b>\n<b>User:</b>{}\n\n<i>Reason:</i> {}", user_mention_or_link(&user),reason);
     cx.requester
         .restrict_chat_member(cx.chat_id(), user_id.unwrap(), ChatPermissions::default())
         .await?;
@@ -397,7 +399,7 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
     let bot_id = get_bot_id(&cx).await;
-    let (user_id, _text) = extract_text_id_from_reply(cx).await;
+    let (user_id, text) = extract_text_id_from_reply(cx).await;
     if user_id.is_none() {
         cx.reply_to("No user was targeted").await?;
         return Ok(());
@@ -446,7 +448,8 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
         .await
         .unwrap()
         .user;
-    let kick_text = format!("<b>Kicked</b>\n<b>User:</b>{}", user_mention_or_link(&user));
+    let reason = text.unwrap_or(String::from("None"));
+    let kick_text = format!("<b>Kicked</b>\n<b>User:</b>{}\n\n<i>Reason:</i> {}", user_mention_or_link(&user),reason);
     cx.requester
         .kick_chat_member(cx.chat_id(), user_id.unwrap())
         .await?;
