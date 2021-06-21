@@ -13,8 +13,8 @@ use std::str::FromStr;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::*;
 use teloxide::types::{
-    ChatKind, ChatMemberStatus, ChatPermissions, InlineKeyboardButton,
-    InlineKeyboardMarkup, ParseMode,
+    ChatKind, ChatMemberStatus, ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup,
+    ParseMode,
 };
 use teloxide::utils::command::parse_command;
 use teloxide::utils::html::{user_mention, user_mention_or_link};
@@ -73,7 +73,11 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
         .await
         .unwrap()
         .user;
-    let ban_text = format!("<b>Banned</b>\n<b>User:</b>{}\n\n<i>Reason:</i> {}", user_mention_or_link(&user),reason);
+    let ban_text = format!(
+        "<b>Banned</b>\n<b>User:</b>{}\n\n<i>Reason:</i> {}",
+        user_mention_or_link(&user),
+        reason
+    );
     cx.requester
         .kick_chat_member(cx.chat_id(), user_id.unwrap())
         .await?;
@@ -343,7 +347,11 @@ pub async fn mute(cx: &Cxt) -> TgErr<()> {
         return Ok(());
     }
     let reason = text.unwrap_or(String::from("None"));
-    let mute_text = format!("<b>Muted</b>\n<b>User:</b>{}\n\n<i>Reason:</i> {}", user_mention_or_link(&user),reason);
+    let mute_text = format!(
+        "<b>Muted</b>\n<b>User:</b>{}\n\n<i>Reason:</i> {}",
+        user_mention_or_link(&user),
+        reason
+    );
     cx.requester
         .restrict_chat_member(cx.chat_id(), user_id.unwrap(), ChatPermissions::default())
         .await?;
@@ -449,7 +457,11 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
         .unwrap()
         .user;
     let reason = text.unwrap_or(String::from("None"));
-    let kick_text = format!("<b>Kicked</b>\n<b>User:</b>{}\n\n<i>Reason:</i> {}", user_mention_or_link(&user),reason);
+    let kick_text = format!(
+        "<b>Kicked</b>\n<b>User:</b>{}\n\n<i>Reason:</i> {}",
+        user_mention_or_link(&user),
+        reason
+    );
     cx.requester
         .kick_chat_member(cx.chat_id(), user_id.unwrap())
         .await?;
@@ -1057,7 +1069,7 @@ pub async fn reset_warns(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if count >= 0 {
+        if count > 0 {
             reset_warn(&db, cx.chat_id(), user_id.unwrap()).await?;
             cx.reply_to(format!(
                 "Warns has been reset for the user {}",

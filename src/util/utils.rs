@@ -37,11 +37,10 @@ pub async fn user_should_restrict(cx: &Cxt, user_id: i64) -> TgErr<()> {
     if can_user_restrict(cx, user_id).await {
         return Ok(());
     }
-    if user_id == get_bot_id(cx).await{
+    if user_id == get_bot_id(cx).await {
         cx.reply_to("I can't restrict people here make sure you gave me proper rights to do so!!")
-        .await?;
-    }
-    else {
+            .await?;
+    } else {
         cx.reply_to("You can't restrict people here!!").await?;
     }
     return Err(anyhow!("User don't have the permission to restrict"));
@@ -72,10 +71,9 @@ pub async fn user_should_be_admin(cx: &Cxt, user_id: i64) -> TgErr<()> {
     if is_user_admin(cx, user_id).await {
         return Ok(());
     }
-    if user_id == get_bot_id(cx).await{
+    if user_id == get_bot_id(cx).await {
         cx.reply_to("I am not admin here!").await?;
-    }
-    else {
+    } else {
         cx.reply_to("You are not an admin here!").await?;
     }
     return Err(anyhow!("User isnt admin"));
@@ -238,11 +236,12 @@ pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
         }
         _ => {}
     }
-    if id == get_bot_id(cx).await{
-        cx.reply_to("I can't pin messages here! Missing can_pin_messages permission").await?;
-    }
-    else {
-        cx.reply_to("You can't pin messages here! Missing can_pin_messages permissions").await?;
+    if id == get_bot_id(cx).await {
+        cx.reply_to("I can't pin messages here! Missing can_pin_messages permission")
+            .await?;
+    } else {
+        cx.reply_to("You can't pin messages here! Missing can_pin_messages permissions")
+            .await?;
     }
     Err(anyhow!(
         "Can't pin messages because missing can_pin_messages permissions"
@@ -265,13 +264,12 @@ pub async fn can_delete_messages(cx: &Cxt, id: i64) -> TgErr<()> {
         }
         _ => {}
     };
-    if id == get_bot_id(cx).await{
+    if id == get_bot_id(cx).await {
         cx.reply_to("I can't delete messages here! Missing can_delete_messages permission")
-        .await?;
-    }
-    else {
+            .await?;
+    } else {
         cx.reply_to("You can't delete messages here! Missing can_delete_messages permission")
-        .await?;
+            .await?;
     }
     Err(anyhow!(
         "Can't delete messages missing can_delete_messages permission"
@@ -293,13 +291,12 @@ pub async fn can_promote_members(cx: &Cxt, id: i64) -> TgErr<()> {
         }
         _ => {}
     }
-    if id == get_bot_id(cx).await{
+    if id == get_bot_id(cx).await {
         cx.reply_to("I can't promote members here! Missing can_promote_members permission")
-        .await?;
-    }
-    else {
+            .await?;
+    } else {
         cx.reply_to("You can't promote members here! Missing can_promote_members permission")
-        .await?;
+            .await?;
     }
     Err(anyhow!(
         "Can't promote members because user is missing can_promote_members permissions"
