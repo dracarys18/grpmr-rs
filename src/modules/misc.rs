@@ -1,6 +1,7 @@
 use crate::{Cxt, TgErr, BOT_TOKEN};
 use mime;
 use regex::Regex;
+use serde_json::json;
 use teloxide::prelude::*;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode};
 use teloxide::utils::command::parse_command;
@@ -50,7 +51,7 @@ pub async fn ud(cx: &Cxt) -> TgErr<()> {
     Ok(())
 }
 
-pub async fn dogbin(cx: &Cxt) -> TgErr<()> {
+pub async fn katbin(cx: &Cxt) -> TgErr<()> {
     let message = &cx.update;
     let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
     let mut _data = String::new();
@@ -84,21 +85,24 @@ pub async fn dogbin(cx: &Cxt) -> TgErr<()> {
         _data = args.join("");
     }
     let client = reqwest::Client::new();
+    let post_json = json!({
+        "content":_data,
+    }
+    );
     let resp = client
-        .post("https://del.dog/documents")
-        .body(_data)
+        .post("https://api.katb.in/api/paste")
+        .json(&post_json)
         .send()
         .await?;
-    let status = resp.status().as_str().to_owned();
     let json: serde_json::Value = resp.json().await?;
-    if status.ne("200") {
-        cx.reply_to(json.get("message").unwrap().as_str().unwrap())
-            .await?;
+    let resp_msg = json.get("msg").unwrap().as_str().unwrap();
+    if resp_msg.ne("Successfully created paste") {
+        cx.reply_to(resp_msg).await?;
         return Ok(());
     }
-    let key = json.get("key").unwrap().as_str().unwrap();
+    let key = json.get("paste_id").unwrap().as_str().unwrap();
     let reply_text = format!(
-        "<b>I have pasted that for you</b>\n\nhttps://del.dog/{}",
+        "<b>I have pasted that for you</b>\n\nhttps://katb.in/{}",
         &key
     );
     cx.reply_to(reply_text).parse_mode(ParseMode::Html).await?;
