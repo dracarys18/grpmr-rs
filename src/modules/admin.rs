@@ -1096,17 +1096,24 @@ pub async fn warns(cx: &Cxt) -> TgErr<()> {
         user_should_be_admin(cx, cx.update.from().unwrap().id),
     )?;
     let db = get_mdb().await;
+    let limit = get_warn_limit(&db, cx.chat_id()).await?;
     let (user_id, _) = extract_text_id_from_reply(cx).await;
     if user_id.is_none() {
-        cx.reply_to("No user was targetted").await?;
-        return Ok(());
+        if let Ok(chat) = cx.requester.get_chat(cx.chat_id()).await {
+            match &chat.kind {
+                ChatKind::Public(c) => {
+                    cx.reply_to(format!("The chat {} has warn limit of {} when the warns exceed the limit the user will be banned from the group",c.title.clone().unwrap(),limit)).await?;
+                    return Ok(());
+                }
+                _ => {}
+            }
+        }
     }
     if let Ok(chatmem) = cx
         .requester
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        let limit = get_warn_limit(&db, cx.chat_id()).await?;
         let count = get_warn_count(&db, cx.chat_id(), user_id.unwrap()).await?;
         if count <= 0 {
             cx.reply_to("This user got no warnings").await?;
