@@ -79,7 +79,7 @@ pub async fn gban(cx: &Cxt) -> TgErr<()> {
         cx.reply_to("Specify someone to gban").await?;
         return Ok(());
     }
-    let reason = text.unwrap_or_else(|| String::new());
+    let reason = text.unwrap_or_else(String::new);
     let gb = &Gban {
         user_id: user_id.unwrap(),
         reason: reason.clone(),
@@ -119,7 +119,12 @@ pub async fn gban(cx: &Cxt) -> TgErr<()> {
             ) {
                 continue;
             }
-            if let Err(_) = cx.requester.kick_chat_member(c, user_id.unwrap()).await {
+            if cx
+                .requester
+                .kick_chat_member(c, user_id.unwrap())
+                .await
+                .is_err()
+            {
                 continue;
             }
         }
@@ -158,10 +163,14 @@ pub async fn ungban(cx: &Cxt) -> TgErr<()> {
         let msg = cx.reply_to("Ungbanning the poor fucker").await?;
         for c in chats {
             if let Ok(mem) = cx.requester.get_chat_member(c, user_id.unwrap()).await {
-                if matches!(mem.status(), ChatMemberStatus::Kicked) {
-                    if let Err(_) = cx.requester.unban_chat_member(c, user_id.unwrap()).await {
-                        continue;
-                    }
+                if matches!(mem.status(), ChatMemberStatus::Kicked)
+                    && cx
+                        .requester
+                        .unban_chat_member(c, user_id.unwrap())
+                        .await
+                        .is_err()
+                {
+                    continue;
                 }
             }
         }

@@ -45,7 +45,7 @@ pub async fn get_userid_from_name(db: &Database, username: String) -> DbResult<O
         Ok(None)
     } else {
         let us_id = id.unwrap().get("user_id").unwrap().as_i64();
-        return Ok(us_id);
+        Ok(us_id)
     }
 }
 
@@ -146,12 +146,12 @@ pub async fn set_gbanstat(
         .await
 }
 
-pub async fn get_gbanstat(db: &Database, chat_id: i64) -> DbResult<bool> {
+pub async fn get_gbanstat(db: &Database, id: i64) -> DbResult<bool> {
     let gbanstat = gbanstat_collection(db);
-    let stat = gbanstat.find_one(doc! {"chat_id":chat_id}, None).await?;
+    let stat = gbanstat.find_one(doc! {"chat_id":id}, None).await?;
     if stat.is_none() {
         let gs = &GbanStat {
-            chat_id: chat_id,
+            chat_id: id,
             is_on: true,
         };
         set_gbanstat(db, gs).await?;
@@ -179,7 +179,7 @@ pub async fn get_warn_count(db: &Database, chat_id: i64, user_id: i64) -> DbResu
         .find_one(doc! {"chat_id":chat_id,"user_id":user_id}, None)
         .await?;
     if count.is_none() {
-        Ok(0 as i64)
+        Ok(0_i64)
     } else {
         Ok(count
             .map(|s| s.get("count").and_then(Bson::as_i64).unwrap())
@@ -217,13 +217,13 @@ pub async fn set_softwarn(
     .await
 }
 
-pub async fn get_softwarn(db: &Database, chat_id: i64) -> DbResult<bool> {
+pub async fn get_softwarn(db: &Database, id: i64) -> DbResult<bool> {
     let wkc = warn_kind_collection(db);
-    let warn_kind = wkc.find_one(doc! {"chat_id":chat_id}, None).await?;
+    let warn_kind = wkc.find_one(doc! {"chat_id":id}, None).await?;
     if warn_kind.is_none() {
         //Default
         let wk = &WarnKind {
-            chat_id: chat_id,
+            chat_id: id,
             softwarn: false,
         };
         set_softwarn(db, wk).await?;
@@ -234,17 +234,17 @@ pub async fn get_softwarn(db: &Database, chat_id: i64) -> DbResult<bool> {
         .unwrap())
 }
 
-pub async fn get_warn_limit(db: &Database, chat_id: i64) -> DbResult<i64> {
+pub async fn get_warn_limit(db: &Database, id: i64) -> DbResult<i64> {
     let warn = warn_limit_collection(db);
-    let warn_lim = warn.find_one(doc! {"chat_id":chat_id}, None).await?;
+    let warn_lim = warn.find_one(doc! {"chat_id":id}, None).await?;
     if warn_lim.is_none() {
         //set default limit to 3
         let wl = &Warnlimit {
-            chat_id: chat_id,
-            limit: 3 as u64,
+            chat_id: id,
+            limit: 3_u64,
         };
         set_warn_limit(db, wl).await?;
-        Ok(3 as i64)
+        Ok(3_i64)
     } else {
         Ok(warn_lim
             .map(|s| s.get("limit").and_then(Bson::as_i64).unwrap())
@@ -275,7 +275,7 @@ pub async fn reset_warn(
     let warn = warn_collection(db);
     warn.update_one(
         doc! {"chat_id":chat_id},
-        doc! {"$set":{"user_id":user_id,"count":0 as i64}},
+        doc! {"$set":{"user_id":user_id,"count":0_i64}},
         mongodb::options::UpdateOptions::builder()
             .upsert(true)
             .build(),

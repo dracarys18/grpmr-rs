@@ -11,7 +11,6 @@ impl Db {
             .await
             .unwrap();
         let client = mongodb::Client::with_options(conf).unwrap();
-        let db = client.database("tgbot");
-        return db;
+        client.database("tgbot")
     }
 }

@@ -31,7 +31,7 @@ pub async fn can_user_restrict(cx: &Cxt, user_id: i64) -> bool {
             return true;
         }
     }
-    return false;
+    false
 }
 pub async fn user_should_restrict(cx: &Cxt, user_id: i64) -> TgErr<()> {
     if can_user_restrict(cx, user_id).await {
@@ -43,7 +43,7 @@ pub async fn user_should_restrict(cx: &Cxt, user_id: i64) -> TgErr<()> {
     } else {
         cx.reply_to("You can't restrict people here!!").await?;
     }
-    return Err(anyhow!("User don't have the permission to restrict"));
+    Err(anyhow!("User don't have the permission to restrict"))
 }
 pub async fn is_user_admin(cx: &Cxt, user_id: i64) -> bool {
     let ret = cx
@@ -65,7 +65,7 @@ pub async fn is_user_admin(cx: &Cxt, user_id: i64) -> bool {
     ) {
         return true;
     }
-    return false;
+    false
 }
 pub async fn user_should_be_admin(cx: &Cxt, user_id: i64) -> TgErr<()> {
     if is_user_admin(cx, user_id).await {
@@ -76,7 +76,7 @@ pub async fn user_should_be_admin(cx: &Cxt, user_id: i64) -> TgErr<()> {
     } else {
         cx.reply_to("You are not an admin here!").await?;
     }
-    return Err(anyhow!("User isnt admin"));
+    Err(anyhow!("User isnt admin"))
 }
 pub fn extract_id_from_reply(cx: &Cxt) -> (Option<i64>, Option<String>) {
     let prev_message = cx.update.reply_to_message();
@@ -196,7 +196,7 @@ pub async fn is_group(cx: &Cxt) -> TgErr<()> {
         return Ok(());
     }
     cx.reply_to("This command can't be used in private").await?;
-    return Err(anyhow!("This isnt a group"));
+    Err(anyhow!("This isnt a group"))
 }
 
 pub async fn can_send_text(cx: &Cxt, id: i64) -> TgErr<bool> {
@@ -322,7 +322,12 @@ pub async fn sudo_or_owner_filter(uid: i64) -> TgErr<()> {
 pub async fn check_and_gban(cx: &Cxt, user_id: i64) -> TgErr<()> {
     let db = get_mdb().await;
     if is_gbanned(&db, &user_id).await? && get_gbanstat(&db, cx.chat_id()).await? {
-        if let Err(_) = cx.requester.kick_chat_member(cx.chat_id(), user_id).await {
+        if cx
+            .requester
+            .kick_chat_member(cx.chat_id(), user_id)
+            .await
+            .is_err()
+        {
             return Ok(());
         }
         cx.requester.send_message(cx.chat_id(),"This is a Gbanned user trying to sneak inside in my presence. I am banning him right away!").await?;
@@ -354,7 +359,7 @@ impl FromStr for PinMode {
             "silent" => PinMode::Silent,
             _ => PinMode::Error,
         };
-        return Ok(ret);
+        Ok(ret)
     }
 }
 

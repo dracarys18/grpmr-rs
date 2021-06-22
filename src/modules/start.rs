@@ -26,5 +26,5 @@ pub async fn help_handler(cx: &Cxt) -> TgErr<()> {
         return Ok(());
     }
     cx.reply_to(descriptions).await?;
-    return Ok(());
+    Ok(())
 }

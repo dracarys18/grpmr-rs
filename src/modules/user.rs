@@ -63,7 +63,7 @@ pub async fn info(cx: &Cxt) -> TgErr<()> {
         );
     }
     cx.reply_to(info_text).parse_mode(ParseMode::Html).await?;
-    return Ok(());
+    Ok(())
 }
 
 pub async fn get_id(cx: &Cxt) -> TgErr<()> {

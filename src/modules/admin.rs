@@ -28,7 +28,7 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
     )?;
     let bot_id = get_bot_id(&cx).await;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
-    let reason = text.unwrap_or(String::from("None"));
+    let reason = text.unwrap_or_else(|| String::from("None"));
     if user_id.is_none() {
         cx.reply_to("No user was targeted").await?;
         return Ok(());
@@ -126,11 +126,9 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
             return Ok(());
         }
 
-        if matches!(mem.status(), ChatMemberStatus::Administrator) {
-            if !mem.can_be_edited() {
-                cx.reply_to("I am not gonna mute an admin here").await?;
-                return Ok(());
-            }
+        if matches!(mem.status(), ChatMemberStatus::Administrator) && !mem.can_be_edited() {
+            cx.reply_to("I am not gonna mute an admin here").await?;
+            return Ok(());
         }
 
         if matches!(
@@ -214,11 +212,9 @@ pub async fn temp_ban(cx: &Cxt) -> TgErr<()> {
             return Ok(());
         }
 
-        if matches!(mem.status(), ChatMemberStatus::Administrator) {
-            if !mem.can_be_edited() {
-                cx.reply_to("I am not gonna ban an admin here").await?;
-                return Ok(());
-            }
+        if matches!(mem.status(), ChatMemberStatus::Administrator) && !mem.can_be_edited() {
+            cx.reply_to("I am not gonna ban an admin here").await?;
+            return Ok(());
         }
 
         if matches!(mem.status(), ChatMemberStatus::Kicked) {
@@ -326,11 +322,9 @@ pub async fn mute(cx: &Cxt) -> TgErr<()> {
             cx.reply_to("I am not gonna mute an Admin Here!").await?;
             return Ok(());
         }
-        if matches!(mem.status(), ChatMemberStatus::Administrator) {
-            if !mem.can_be_edited() {
-                cx.reply_to("I am not gonna mute an Admin Here!").await?;
-                return Ok(());
-            }
+        if matches!(mem.status(), ChatMemberStatus::Administrator) && !mem.can_be_edited() {
+            cx.reply_to("I am not gonna mute an Admin Here!").await?;
+            return Ok(());
         }
     } else {
         cx.reply_to("I can't seem to get info for this user")
@@ -347,7 +341,7 @@ pub async fn mute(cx: &Cxt) -> TgErr<()> {
         cx.reply_to("User is already restricted").await?;
         return Ok(());
     }
-    let reason = text.unwrap_or(String::from("None"));
+    let reason = text.unwrap_or_else(|| String::from("None"));
     let mute_text = format!(
         "<b>Muted</b>\n<b>User:</b>{}\n\n<i>Reason:</i> {}",
         user_mention_or_link(&user),
@@ -440,11 +434,9 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
             cx.reply_to("I am not gonna kick an Admin Here!").await?;
             return Ok(());
         }
-        if matches!(mem.status(), ChatMemberStatus::Administrator) {
-            if !mem.can_be_edited() {
-                cx.reply_to("I am not gonna kick an Admin Here!").await?;
-                return Ok(());
-            }
+        if matches!(mem.status(), ChatMemberStatus::Administrator) && !mem.can_be_edited() {
+            cx.reply_to("I am not gonna kick an Admin Here!").await?;
+            return Ok(());
         }
     } else {
         cx.reply_to("I can't seem to get info for this user")
@@ -457,7 +449,7 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
         .await
         .unwrap()
         .user;
-    let reason = text.unwrap_or(String::from("None"));
+    let reason = text.unwrap_or_else(|| String::from("None"));
     let kick_text = format!(
         "<b>Kicked</b>\n<b>User:</b>{}\n\n<i>Reason:</i> {}",
         user_mention_or_link(&user),
@@ -486,11 +478,9 @@ pub async fn kickme(cx: &Cxt) -> TgErr<()> {
                 cx.reply_to("I am not gonna kick an Admin Here!").await?;
                 return Ok(());
             }
-            if matches!(mem.status(), ChatMemberStatus::Administrator) {
-                if !mem.can_be_edited() {
-                    cx.reply_to("I am not gonna kick an Admin Here!").await?;
-                    return Ok(());
-                }
+            if matches!(mem.status(), ChatMemberStatus::Administrator) && !mem.can_be_edited() {
+                cx.reply_to("I am not gonna kick an Admin Here!").await?;
+                return Ok(());
             }
         } else {
             cx.reply_to("Can't kick the user").await?;
@@ -505,7 +495,7 @@ pub async fn kickme(cx: &Cxt) -> TgErr<()> {
     } else {
         cx.reply_to("Can't get the info about the user").await?;
     }
-    return Ok(());
+    Ok(())
 }
 
 pub async fn pin(cx: &Cxt) -> TgErr<()> {
@@ -945,7 +935,7 @@ pub async fn warn(cx: &Cxt) -> TgErr<()> {
             .await?;
         return Ok(());
     }
-    let reason = text.unwrap_or(String::new());
+    let reason = text.unwrap_or_else(String::new);
     let w_count = get_warn_count(&db, cx.chat_id(), user_id.unwrap()).await?;
     let lim = get_warn_limit(&db, cx.chat_id()).await?;
     let mode = get_softwarn(&db, cx.chat_id()).await?;
@@ -1011,11 +1001,11 @@ pub async fn handle_unwarn_button(cx: &Ctx) -> TgErr<()> {
         let caps = re.captures(&d).unwrap();
         let chat_id = caps
             .get(1)
-            .map_or(0 as i64, |s| s.as_str().parse::<i64>().unwrap());
+            .map_or(0_i64, |s| s.as_str().parse::<i64>().unwrap());
         let user_id = cx.update.from.id;
         let warned_user = caps
             .get(2)
-            .map_or(0 as i64, |s| s.as_str().parse::<i64>().unwrap());
+            .map_or(0_i64, |s| s.as_str().parse::<i64>().unwrap());
         let chatmem = cx.requester.get_chat_member(chat_id, user_id).await?;
         let count = get_warn_count(&db, chat_id, warned_user).await?;
         match chatmem.status() {
@@ -1025,7 +1015,7 @@ pub async fn handle_unwarn_button(cx: &Ctx) -> TgErr<()> {
                         .edit_message_text(
                             chat_id,
                             cx.update.message.clone().unwrap().id,
-                            format!("Warn is alredy removed"),
+                            "Warn is alredy removed",
                         )
                         .await?;
                     return Ok(());
@@ -1058,7 +1048,7 @@ pub async fn warn_limit(cx: &Cxt) -> TgErr<()> {
         cx.reply_to("Send proper warn limit").await?;
         return Ok(());
     }
-    let limit = match args[0].parse::<u64>() {
+    let lim = match args[0].parse::<u64>() {
         Ok(val) => val,
         Err(_) => {
             cx.reply_to("Send a proper warn limit you idiot!").await?;
@@ -1067,10 +1057,10 @@ pub async fn warn_limit(cx: &Cxt) -> TgErr<()> {
     };
     let wl = &Warnlimit {
         chat_id: cx.chat_id(),
-        limit: limit,
+        limit: lim,
     };
     set_warn_limit(&db, wl).await?;
-    cx.reply_to(format!("Warn limit set to {}", limit)).await?;
+    cx.reply_to(format!("Warn limit set to {}", lim)).await?;
     Ok(())
 }
 
@@ -1152,12 +1142,9 @@ pub async fn warns(cx: &Cxt) -> TgErr<()> {
     let (user_id, _) = extract_text_id_from_reply(cx).await;
     if user_id.is_none() {
         if let Ok(chat) = cx.requester.get_chat(cx.chat_id()).await {
-            match &chat.kind {
-                ChatKind::Public(c) => {
-                    cx.reply_to(format!("The chat {} has warn limit of {} when the warns exceed the limit the user will be banned from the group",c.title.clone().unwrap(),limit)).await?;
-                    return Ok(());
-                }
-                _ => {}
+            if let ChatKind::Public(c) = chat.kind {
+                cx.reply_to(format!("The chat {} has warn limit of {} when the warns exceed the limit the user will be banned from the group",c.title.clone().unwrap(),limit)).await?;
+                return Ok(());
             }
         }
     }
