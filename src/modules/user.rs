@@ -1,5 +1,6 @@
+use crate::database::db_utils::{get_gban_reason, is_gbanned};
 use crate::util::extract_text_id_from_reply;
-use crate::{Cxt, TgErr, OWNER_ID, SUDO_USERS};
+use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use teloxide::prelude::*;
 use teloxide::types::{ChatKind, ForwardedFrom, ParseMode};
 use teloxide::utils::command::parse_command;
@@ -7,6 +8,7 @@ use teloxide::utils::html::user_mention;
 
 pub async fn info(cx: &Cxt) -> TgErr<()> {
     let (user_id, _) = extract_text_id_from_reply(cx).await;
+    let db = get_mdb().await;
     let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
     let chat = cx.update.chat.clone();
     let mut user = None;
@@ -32,6 +34,7 @@ pub async fn info(cx: &Cxt) -> TgErr<()> {
     }
 
     let us_inf = user.unwrap();
+    let is_rekt = is_gbanned(&db, &us_inf.id).await?;
     let mut info_text = format!(
         "<b>User info</b>:\nID:<code>{}</code>\nFirst Name: {}",
         &us_inf.id, &us_inf.first_name
@@ -51,6 +54,13 @@ pub async fn info(cx: &Cxt) -> TgErr<()> {
         user_mention(us_inf.id as i32, "link")
     );
 
+    if is_rekt {
+        info_text = format!(
+            "{}\n\n<b>This is a gbanned user</b>\n<i>Reason: {}</i>",
+            info_text,
+            &get_gban_reason(&db, &us_inf.id).await?
+        );
+    }
     if us_inf.id == *OWNER_ID {
         info_text = format!(
             "{}\n\n<i>Note:-This user is my owner I will always be loyal to him</i>",
