@@ -1,4 +1,4 @@
-use super::{Chat, Gban, GbanStat, User, Warn, Warnlimit};
+use super::{Chat, Gban, GbanStat, User, Warn, WarnKind, Warnlimit};
 use crate::{Cxt, TgErr};
 use mongodb::{bson::doc, bson::Bson, Database};
 use teloxide::prelude::StreamExt;
@@ -17,6 +17,9 @@ fn gban_collection(db: &Database) -> mongodb::Collection {
 }
 fn warn_collection(db: &Database) -> mongodb::Collection {
     db.collection("Warn")
+}
+fn warn_kind_collection(db: &Database) -> mongodb::Collection {
+    db.collection("WarnKind")
 }
 fn warn_limit_collection(db: &Database) -> mongodb::Collection {
     db.collection("Warnlimit")
@@ -197,6 +200,38 @@ pub async fn set_warn_limit(
             .build(),
     )
     .await
+}
+
+pub async fn set_softwarn(
+    db: &Database,
+    wk: &WarnKind,
+) -> DbResult<mongodb::results::UpdateResult> {
+    let wkc = warn_kind_collection(db);
+    wkc.update_one(
+        doc! {"chat_id":wk.chat_id},
+        doc! {"$set":{"softwarn":wk.softwarn}},
+        mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build(),
+    )
+    .await
+}
+
+pub async fn get_softwarn(db: &Database, chat_id: i64) -> DbResult<bool> {
+    let wkc = warn_kind_collection(db);
+    let warn_kind = wkc.find_one(doc! {"chat_id":chat_id}, None).await?;
+    if warn_kind.is_none() {
+        //Default
+        let wk = &WarnKind {
+            chat_id: chat_id,
+            softwarn: false,
+        };
+        set_softwarn(db, wk).await?;
+        return Ok(false);
+    }
+    Ok(warn_kind
+        .map(|d| d.get("softwarn").and_then(Bson::as_bool).unwrap())
+        .unwrap())
 }
 
 pub async fn get_warn_limit(db: &Database, chat_id: i64) -> DbResult<i64> {

@@ -1,11 +1,12 @@
 use crate::database::db_utils::{
-    get_warn_count, get_warn_limit, insert_warn, reset_warn, rm_single_warn, set_warn_limit,
+    get_softwarn, get_warn_count, get_warn_limit, insert_warn, reset_warn, rm_single_warn,
+    set_softwarn, set_warn_limit,
 };
-use crate::database::{Warn, Warnlimit};
+use crate::database::{Warn, WarnKind, Warnlimit};
 use crate::util::{
     can_pin_messages, can_promote_members, can_send_text, extract_text_id_from_reply, get_bot_id,
     get_time, is_group, is_user_restricted, sudo_or_owner_filter, user_should_be_admin,
-    user_should_restrict, LockType, PinMode, TimeUnit,
+    user_should_restrict, LockType, PinMode, TimeUnit, WarnMode,
 };
 use crate::{get_mdb, Ctx, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use regex::Regex;
@@ -947,6 +948,7 @@ pub async fn warn(cx: &Cxt) -> TgErr<()> {
     let reason = text.unwrap_or(String::new());
     let w_count = get_warn_count(&db, cx.chat_id(), user_id.unwrap()).await?;
     let lim = get_warn_limit(&db, cx.chat_id()).await?;
+    let mode = get_softwarn(&db, cx.chat_id()).await?;
     let warn = &Warn {
         chat_id: cx.chat_id(),
         user_id: user_id.unwrap(),
@@ -962,12 +964,24 @@ pub async fn warn(cx: &Cxt) -> TgErr<()> {
             cx.requester
                 .kick_chat_member(cx.chat_id(), user_id.unwrap())
                 .await?;
-            cx.reply_to(format!(
-                "That's it get out ({}\\{}) warns",
-                &w_count + 1,
-                &lim
-            ))
-            .await?;
+            if mode {
+                cx.requester
+                    .unban_chat_member(cx.chat_id(), user_id.unwrap())
+                    .await?;
+                cx.reply_to(format!(
+                    "That's it get out ({}\\{}) warns, User has been kicked!",
+                    &w_count + 1,
+                    &lim
+                ))
+                .await?;
+            } else {
+                cx.reply_to(format!(
+                    "That's it get out ({}\\{}) warns, User has been banned!",
+                    &w_count + 1,
+                    &lim
+                ))
+                .await?;
+            }
             reset_warn(&db, cx.chat_id(), user_id.unwrap()).await?;
             return Ok(());
         }
@@ -1057,6 +1071,44 @@ pub async fn warn_limit(cx: &Cxt) -> TgErr<()> {
     };
     set_warn_limit(&db, wl).await?;
     cx.reply_to(format!("Warn limit set to {}", limit)).await?;
+    Ok(())
+}
+
+pub async fn warnmode(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),
+        user_should_be_admin(cx, cx.update.from().unwrap().id),
+    )?;
+    let db = get_mdb().await;
+    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    if args.is_empty() {
+        cx.reply_to("Mention any option! Available one's are (soft/smooth),(hard/strong)")
+            .await?;
+        return Ok(());
+    }
+    let mode = args[0].to_lowercase().parse::<WarnMode>().unwrap();
+    match mode {
+        WarnMode::Soft => {
+            let wk = &WarnKind {
+                chat_id: cx.chat_id(),
+                softwarn: true,
+            };
+            set_softwarn(&db, wk).await?;
+            cx.reply_to("Warnmode is set to soft. Now I will just kick the chat members when their warn exceeds the limit").await?;
+        }
+        WarnMode::Hard => {
+            let wk = &WarnKind {
+                chat_id: cx.chat_id(),
+                softwarn: false,
+            };
+            set_softwarn(&db, wk).await?;
+            cx.reply_to("Warnmode is set to hard. I will ban the chat members when their warn exceeds the limit").await?;
+        }
+        WarnMode::Error => {
+            cx.reply_to("Invalid warnmode available one's are (soft/strong),(strong/hard)")
+                .await?;
+        }
+    }
     Ok(())
 }
 

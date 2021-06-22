@@ -28,6 +28,11 @@ pub struct Warn {
     pub count: u64,
 }
 
+pub struct WarnKind {
+    pub chat_id: i64,
+    pub softwarn: bool,
+}
+
 pub struct Warnlimit {
     pub chat_id: i64,
     pub limit: u64,

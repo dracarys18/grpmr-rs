@@ -186,7 +186,7 @@ pub async fn gbanstat(cx: &Cxt) -> TgErr<()> {
         cx.reply_to("What should I do with this?").await?;
         return Ok(());
     }
-    let gstat = args[0].parse::<GbanStats>().unwrap();
+    let gstat = args[0].to_lowercase().parse::<GbanStats>().unwrap();
     match gstat {
         GbanStats::On => {
             let gs = &GbanStat {

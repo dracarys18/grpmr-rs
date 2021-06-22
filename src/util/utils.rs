@@ -489,3 +489,20 @@ impl FromStr for GbanStats {
         }
     }
 }
+
+pub enum WarnMode {
+    Soft,
+    Hard,
+    Error,
+}
+
+impl FromStr for WarnMode {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        match s {
+            "soft" | "smooth" => Ok(WarnMode::Soft),
+            "hard" | "strong" => Ok(WarnMode::Hard),
+            _ => Ok(WarnMode::Error),
+        }
+    }
+}
