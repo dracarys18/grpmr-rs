@@ -57,11 +57,15 @@ pub async fn chatlist(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(owner_filter(cx.update.from().unwrap().id))?;
     let db = get_mdb().await;
     let chatlist = get_all_chats(&db).await?;
-    let chat_string = chatlist
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<Vec<String>>()
-        .join("\n");
+    let mut chat_string = String::new();
+    for c in chatlist {
+        if let Ok(chat) = cx.requester.get_chat(c).await {
+            if let ChatKind::Public(pu) = chat.kind {
+                let s = format!("- <code>{} : {}</code>\n", pu.title.unwrap(), &c);
+                chat_string.push_str(&s);
+            }
+        }
+    }
     cx.reply_to(format!(
         "The chat id's of the chats I am in \n <code>{}</code> ",
         chat_string
