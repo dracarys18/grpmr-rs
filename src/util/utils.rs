@@ -1,4 +1,6 @@
-use crate::database::db_utils::{get_gbanstat, get_userid_from_name, is_gbanned};
+use crate::database::db_utils::{
+    get_disabled_command, get_gbanstat, get_userid_from_name, is_gbanned,
+};
 use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use anyhow::anyhow;
 use std::fmt::Display;
@@ -510,4 +512,51 @@ impl FromStr for WarnMode {
             _ => Ok(WarnMode::Error),
         }
     }
+}
+
+//Commands that can be disabled
+pub enum DisableAble {
+    Ud,
+    Info,
+    Start,
+    Paste,
+    Kickme,
+    Adminlist,
+    Error,
+}
+
+impl FromStr for DisableAble {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        match s {
+            "ud" => Ok(DisableAble::Ud),
+            "info" => Ok(DisableAble::Info),
+            "start" => Ok(DisableAble::Start),
+            "paste" => Ok(DisableAble::Paste),
+            "kickme" => Ok(DisableAble::Kickme),
+            "adminlist" => Ok(DisableAble::Adminlist),
+            _ => Ok(DisableAble::Error),
+        }
+    }
+}
+
+pub async fn is_command_disabled(chat_id: i64, cmd: String) -> bool {
+    if !matches!(cmd.parse::<DisableAble>().unwrap(), DisableAble::Error) {
+        let db = get_mdb().await;
+        let dis_cmds = get_disabled_command(&db, chat_id).await.unwrap();
+        let ind = dis_cmds.iter().position(|p| p.eq(&cmd.to_lowercase()));
+        return ind.is_some();
+    }
+    false
+}
+
+pub async fn check_command_disabled(cx: &Cxt, cmd: String) -> TgErr<()> {
+    if cx.update.chat.is_group() || cx.update.chat.is_supergroup() {
+        if !is_command_disabled(cx.chat_id(), cmd).await {
+            return Ok(());
+        } else {
+            return Err(anyhow!("This command is disabled"));
+        }
+    }
+    Ok(())
 }

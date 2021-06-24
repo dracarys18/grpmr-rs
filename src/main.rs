@@ -7,6 +7,7 @@ use database::db_utils::{save_chat, save_user};
 use database::Db;
 use lazy_static::lazy_static;
 use modules::admin::*;
+use modules::disable::*;
 use modules::misc::*;
 use modules::msg_delete::*;
 use modules::start::*;
@@ -16,7 +17,7 @@ use modules::Command;
 use regex::Regex;
 use std::error::Error;
 use teloxide::prelude::*;
-use teloxide::utils::command::BotCommand as Cmd;
+use teloxide::utils::command::{parse_command, BotCommand as Cmd};
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use crate::util::enforce_gban;
@@ -56,6 +57,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
     }
     let command = Cmd::parse(txt.unwrap(), "grpmr_bot");
     if let Ok(c) = command {
+        let (cmnd, _) = parse_command(txt.unwrap(), "grpmr_bot").unwrap();
         match c {
             Command::Ban => {
                 ban(&cx).await?;
@@ -65,23 +67,23 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Mute => mute(&cx).await?,
             Command::Tmute => temp_mute(&cx).await?,
             Command::Unmute => unmute(&cx).await?,
-            Command::Start => start_handler(&cx).await?,
+            Command::Start => start_handler(&cx, cmnd).await?,
             Command::Help => help_handler(&cx).await?,
             Command::Kick => kick(&cx).await?,
-            Command::Kickme => kickme(&cx).await?,
-            Command::Info => info(&cx).await?,
+            Command::Kickme => kickme(&cx, cmnd).await?,
+            Command::Info => info(&cx, cmnd).await?,
             Command::Id => get_id(&cx).await?,
             Command::Pin => pin(&cx).await?,
             Command::Unpin => unpin(&cx).await?,
             Command::Promote => promote(&cx).await?,
             Command::Demote => demote(&cx).await?,
             Command::Invitelink => invitelink(&cx).await?,
-            Command::Adminlist => adminlist(&cx).await?,
+            Command::Adminlist => adminlist(&cx, cmnd).await?,
             Command::Purge => purge(&cx).await?,
             Command::Del => delete(&cx).await?,
             Command::Leavechat => leavechat(&cx).await?,
-            Command::Ud => ud(&cx).await?,
-            Command::Paste => katbin(&cx).await?,
+            Command::Ud => ud(&cx, cmnd).await?,
+            Command::Paste => katbin(&cx, cmnd).await?,
             Command::Lock => lock(&cx).await?,
             Command::Unlock => unlock(&cx).await?,
             Command::Locktypes => locktypes(&cx).await?,
@@ -94,6 +96,8 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Warnmode => warnmode(&cx).await?,
             Command::Resetwarns => reset_warns(&cx).await?,
             Command::Warns => warns(&cx).await?,
+            Command::Disable => disable(&cx).await?,
+            Command::Enable => enable(&cx).await?,
         }
     }
     Ok(())

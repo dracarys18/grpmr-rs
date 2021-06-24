@@ -37,3 +37,8 @@ pub struct Warnlimit {
     pub chat_id: i64,
     pub limit: u64,
 }
+
+pub struct DisableCommand {
+    pub chat_id: i64,
+    pub disabled_commands: Vec<String>,
+}

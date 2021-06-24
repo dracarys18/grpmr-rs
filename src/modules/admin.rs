@@ -4,9 +4,10 @@ use crate::database::db_utils::{
 };
 use crate::database::{Warn, WarnKind, Warnlimit};
 use crate::util::{
-    can_pin_messages, can_promote_members, can_send_text, extract_text_id_from_reply, get_bot_id,
-    get_time, is_group, is_user_restricted, sudo_or_owner_filter, user_should_be_admin,
-    user_should_restrict, LockType, PinMode, TimeUnit, WarnMode,
+    can_pin_messages, can_promote_members, can_send_text, check_command_disabled,
+    extract_text_id_from_reply, get_bot_id, get_time, is_group, is_user_restricted,
+    sudo_or_owner_filter, user_should_be_admin, user_should_restrict, LockType, PinMode, TimeUnit,
+    WarnMode,
 };
 use crate::{get_mdb, Ctx, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use regex::Regex;
@@ -464,8 +465,12 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
     cx.reply_to(kick_text).parse_mode(ParseMode::Html).await?;
     Ok(())
 }
-pub async fn kickme(cx: &Cxt) -> TgErr<()> {
-    tokio::try_join!(is_group(cx), user_should_restrict(cx, get_bot_id(cx).await))?;
+pub async fn kickme(cx: &Cxt, cmd: &str) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),
+        user_should_restrict(cx, get_bot_id(cx).await),
+        check_command_disabled(cx, String::from(cmd))
+    )?;
     if let Some(user) = cx.update.from() {
         let user_id = user.id;
         if user_id == *OWNER_ID || (*SUDO_USERS).contains(&user_id) {
@@ -735,8 +740,8 @@ pub async fn invitelink(cx: &Cxt) -> TgErr<()> {
     Ok(())
 }
 
-pub async fn adminlist(cx: &Cxt) -> TgErr<()> {
-    tokio::try_join!(is_group(cx))?;
+pub async fn adminlist(cx: &Cxt, cmd: &str) -> TgErr<()> {
+    tokio::try_join!(is_group(cx), check_command_disabled(cx, String::from(cmd)))?;
     let chatmem = cx.requester.get_chat_administrators(cx.chat_id()).await?;
     let adminlist = chatmem
         .iter()

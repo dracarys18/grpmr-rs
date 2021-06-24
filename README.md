@@ -46,6 +46,9 @@
 <li>
 <code>/paste:</code> Pastes the given text into <a href='https://katb.in/'>Katbin</a> and sends the link of the paste.
 </li>
+<li>
+<code>/disable &lt;command&gt;:</code> Disables the use of a command in a group.
+</li>
 </p>
 
 <h1>How to Use?</h1>

@@ -1,12 +1,13 @@
 use crate::database::db_utils::{get_gban_reason, is_gbanned};
-use crate::util::extract_text_id_from_reply;
+use crate::util::{check_command_disabled, extract_text_id_from_reply};
 use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use teloxide::prelude::*;
 use teloxide::types::{ChatKind, ForwardedFrom, ParseMode};
 use teloxide::utils::command::parse_command;
 use teloxide::utils::html::user_mention;
 
-pub async fn info(cx: &Cxt) -> TgErr<()> {
+pub async fn info(cx: &Cxt, cmd: &str) -> TgErr<()> {
+    tokio::try_join!(check_command_disabled(cx, String::from(cmd)))?;
     let (user_id, _) = extract_text_id_from_reply(cx).await;
     let db = get_mdb().await;
     let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();

@@ -1,9 +1,11 @@
 use super::commands::Command;
 use crate::teloxide::utils::command::BotCommand;
+use crate::util::check_command_disabled;
 use crate::{Cxt, TgErr};
 use teloxide::utils::html::user_mention_or_link;
 
-pub async fn start_handler(cx: &Cxt) -> TgErr<()> {
+pub async fn start_handler(cx: &Cxt, cmd: &str) -> TgErr<()> {
+    tokio::try_join!(check_command_disabled(cx, String::from(cmd)))?;
     let start_message_priv = format!(
         "Hello {}! Hope you are doing well\n Send /help to know about available commands",
         user_mention_or_link(cx.update.from().unwrap())

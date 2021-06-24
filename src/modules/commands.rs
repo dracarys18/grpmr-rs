@@ -72,4 +72,8 @@ pub enum Command {
     Resetwarns,
     #[command(description = "Counts the number of warnings")]
     Warns,
+    #[command(description = "Disables a command")]
+    Disable,
+    #[command(description = "Enables a command")]
+    Enable,
 }

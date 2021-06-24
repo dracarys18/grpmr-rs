@@ -1,3 +1,4 @@
+use crate::util::check_command_disabled;
 use crate::{Cxt, TgErr, BOT_TOKEN};
 use mime;
 use regex::Regex;
@@ -6,7 +7,8 @@ use teloxide::prelude::*;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode};
 use teloxide::utils::command::parse_command;
 
-pub async fn ud(cx: &Cxt) -> TgErr<()> {
+pub async fn ud(cx: &Cxt, cmd: &str) -> TgErr<()> {
+    tokio::try_join!(check_command_disabled(cx, String::from(cmd)))?;
     let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
     if args.is_empty() {
         cx.reply_to("Please enter a keyword to search").await?;
@@ -51,7 +53,8 @@ pub async fn ud(cx: &Cxt) -> TgErr<()> {
     Ok(())
 }
 
-pub async fn katbin(cx: &Cxt) -> TgErr<()> {
+pub async fn katbin(cx: &Cxt, cmd: &str) -> TgErr<()> {
+    tokio::try_join!(check_command_disabled(cx, String::from(cmd)))?;
     let message = &cx.update;
     let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
     let mut _data = String::new();

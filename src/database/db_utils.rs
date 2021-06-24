@@ -1,4 +1,4 @@
-use super::{Chat, Gban, GbanStat, User, Warn, WarnKind, Warnlimit};
+use super::{Chat, DisableCommand, Gban, GbanStat, User, Warn, WarnKind, Warnlimit};
 use crate::{Cxt, TgErr};
 use mongodb::{bson::doc, bson::Bson, Database};
 use teloxide::prelude::StreamExt;
@@ -26,6 +26,9 @@ fn warn_limit_collection(db: &Database) -> mongodb::Collection {
 }
 fn gbanstat_collection(db: &Database) -> mongodb::Collection {
     db.collection("GbanStat")
+}
+fn disable_collection(db: &Database) -> mongodb::Collection {
+    db.collection("DisableCommand")
 }
 pub async fn insert_user(db: &Database, us: &User) -> DbResult<mongodb::results::UpdateResult> {
     let user = user_collection(db);
@@ -281,4 +284,44 @@ pub async fn reset_warn(
             .build(),
     )
     .await
+}
+
+pub async fn disable_command(
+    db: &Database,
+    dc: &DisableCommand,
+) -> DbResult<mongodb::results::UpdateResult> {
+    let disable_coll = disable_collection(db);
+    disable_coll
+        .update_one(
+            doc! {"chat_id":dc.chat_id},
+            doc! {"$set":{"disabled_commands": dc.disabled_commands.clone()}},
+            mongodb::options::UpdateOptions::builder()
+                .upsert(true)
+                .build(),
+        )
+        .await
+}
+
+pub async fn get_disabled_command(db: &Database, chat_id: i64) -> DbResult<Vec<String>> {
+    let dc = disable_collection(db);
+    let f = dc.find_one(doc! {"chat_id":chat_id}, None).await?;
+    if f.is_none() {
+        let dc = &DisableCommand {
+            chat_id: chat_id,
+            disabled_commands: Vec::new(),
+        };
+        disable_command(&db, dc).await?;
+        return Ok(Vec::new());
+    }
+
+    Ok(f.map(|d| {
+        d.get("disabled_commands")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|b| b.as_str().unwrap().to_owned())
+            .collect()
+    })
+    .unwrap())
 }
