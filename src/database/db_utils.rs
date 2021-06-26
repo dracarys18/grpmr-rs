@@ -44,12 +44,7 @@ pub async fn insert_user(db: &Database, us: &User) -> DbResult<mongodb::results:
 pub async fn get_userid_from_name(db: &Database, username: String) -> DbResult<Option<i64>> {
     let user = user_collection(db);
     let id = user.find_one(doc! {"user_name":username}, None).await?;
-    if id.is_none() {
-        Ok(None)
-    } else {
-        let us_id = Some(id.unwrap().user_id);
-        Ok(us_id)
-    }
+    Ok(id.map(|u| u.user_id))
 }
 
 pub async fn save_user(cx: &Cxt, db: &Database) -> TgErr<()> {
@@ -174,11 +169,7 @@ pub async fn get_warn_count(db: &Database, chat_id: i64, user_id: i64) -> DbResu
     let count = warn
         .find_one(doc! {"chat_id":chat_id,"user_id":user_id}, None)
         .await?;
-    if count.is_none() {
-        Ok(0_i64)
-    } else {
-        Ok(count.map(|s| s.count as i64).unwrap())
-    }
+    Ok(count.map(|s| s.count as i64).unwrap_or(0_i64))
 }
 
 pub async fn set_warn_limit(
@@ -289,12 +280,12 @@ pub async fn disable_command(
         .await
 }
 
-pub async fn get_disabled_command(db: &Database, chat_id: i64) -> DbResult<Vec<String>> {
+pub async fn get_disabled_command(db: &Database, id: i64) -> DbResult<Vec<String>> {
     let dc = disable_collection(db);
-    let f = dc.find_one(doc! {"chat_id":chat_id}, None).await?;
+    let f = dc.find_one(doc! {"chat_id":id}, None).await?;
     if f.is_none() {
         let dc = &DisableCommand {
-            chat_id: chat_id,
+            chat_id: id,
             disabled_commands: Vec::new(),
         };
         disable_command(&db, dc).await?;
