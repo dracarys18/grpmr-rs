@@ -1,33 +1,33 @@
 use super::{Chat, DisableCommand, Gban, GbanStat, User, Warn, WarnKind, Warnlimit};
 use crate::{Cxt, TgErr};
-use mongodb::{bson::doc, bson::Bson, Database};
+use mongodb::{bson::doc, Database};
 use teloxide::prelude::StreamExt;
 use teloxide::types::ChatKind;
 
 type DbResult<T> = Result<T, mongodb::error::Error>;
 
-fn user_collection(db: &Database) -> mongodb::Collection {
+fn user_collection(db: &Database) -> mongodb::Collection<User> {
     db.collection("User")
 }
-fn chat_collection(db: &Database) -> mongodb::Collection {
+fn chat_collection(db: &Database) -> mongodb::Collection<Chat> {
     db.collection("Chats")
 }
-fn gban_collection(db: &Database) -> mongodb::Collection {
+fn gban_collection(db: &Database) -> mongodb::Collection<Gban> {
     db.collection("Gban")
 }
-fn warn_collection(db: &Database) -> mongodb::Collection {
+fn warn_collection(db: &Database) -> mongodb::Collection<Warn> {
     db.collection("Warn")
 }
-fn warn_kind_collection(db: &Database) -> mongodb::Collection {
+fn warn_kind_collection(db: &Database) -> mongodb::Collection<WarnKind> {
     db.collection("WarnKind")
 }
-fn warn_limit_collection(db: &Database) -> mongodb::Collection {
+fn warn_limit_collection(db: &Database) -> mongodb::Collection<Warnlimit> {
     db.collection("Warnlimit")
 }
-fn gbanstat_collection(db: &Database) -> mongodb::Collection {
+fn gbanstat_collection(db: &Database) -> mongodb::Collection<GbanStat> {
     db.collection("GbanStat")
 }
-fn disable_collection(db: &Database) -> mongodb::Collection {
+fn disable_collection(db: &Database) -> mongodb::Collection<DisableCommand> {
     db.collection("DisableCommand")
 }
 pub async fn insert_user(db: &Database, us: &User) -> DbResult<mongodb::results::UpdateResult> {
@@ -47,7 +47,7 @@ pub async fn get_userid_from_name(db: &Database, username: String) -> DbResult<O
     if id.is_none() {
         Ok(None)
     } else {
-        let us_id = id.unwrap().get("user_id").unwrap().as_i64();
+        let us_id = Some(id.unwrap().user_id);
         Ok(us_id)
     }
 }
@@ -79,10 +79,7 @@ pub async fn insert_chat(db: &Database, c: &Chat) -> DbResult<mongodb::results::
 pub async fn get_all_chats(db: &Database) -> DbResult<Vec<i64>> {
     let chat = chat_collection(db);
     let cursor = chat.find(None, None).await?;
-    let chats: Vec<i64> = cursor
-        .map(|chat| chat.unwrap().get("chat_id").and_then(Bson::as_i64).unwrap())
-        .collect()
-        .await;
+    let chats: Vec<i64> = cursor.map(|chat| chat.unwrap().chat_id).collect().await;
     Ok(chats)
 }
 pub async fn save_chat(cx: &Cxt, db: &Database) -> TgErr<()> {
@@ -122,9 +119,7 @@ pub async fn ungban_user(db: &Database, id: &i64) -> DbResult<mongodb::results::
 pub async fn get_gban_reason(db: &Database, id: &i64) -> DbResult<String> {
     let gban = gban_collection(db);
     let reason = gban.find_one(doc! {"user_id":id}, None).await?;
-    Ok(reason
-        .map(|r| r.get("reason").and_then(Bson::as_str).unwrap().to_string())
-        .unwrap())
+    Ok(reason.map(|r| r.reason).unwrap())
 }
 
 pub async fn is_gbanned(db: &Database, id: &i64) -> DbResult<bool> {
@@ -160,9 +155,7 @@ pub async fn get_gbanstat(db: &Database, id: i64) -> DbResult<bool> {
         set_gbanstat(db, gs).await?;
         return Ok(true);
     }
-    Ok(stat
-        .map(|d| d.get("is_on").and_then(Bson::as_bool).unwrap())
-        .unwrap())
+    Ok(stat.map(|d| d.is_on).unwrap())
 }
 pub async fn insert_warn(db: &Database, w: &Warn) -> DbResult<mongodb::results::UpdateResult> {
     let warn = warn_collection(db);
@@ -184,9 +177,7 @@ pub async fn get_warn_count(db: &Database, chat_id: i64, user_id: i64) -> DbResu
     if count.is_none() {
         Ok(0_i64)
     } else {
-        Ok(count
-            .map(|s| s.get("count").and_then(Bson::as_i64).unwrap())
-            .unwrap())
+        Ok(count.map(|s| s.count as i64).unwrap())
     }
 }
 
@@ -232,9 +223,7 @@ pub async fn get_softwarn(db: &Database, id: i64) -> DbResult<bool> {
         set_softwarn(db, wk).await?;
         return Ok(false);
     }
-    Ok(warn_kind
-        .map(|d| d.get("softwarn").and_then(Bson::as_bool).unwrap())
-        .unwrap())
+    Ok(warn_kind.map(|d| d.softwarn).unwrap())
 }
 
 pub async fn get_warn_limit(db: &Database, id: i64) -> DbResult<i64> {
@@ -249,9 +238,7 @@ pub async fn get_warn_limit(db: &Database, id: i64) -> DbResult<i64> {
         set_warn_limit(db, wl).await?;
         Ok(3_i64)
     } else {
-        Ok(warn_lim
-            .map(|s| s.get("limit").and_then(Bson::as_i64).unwrap())
-            .unwrap())
+        Ok(warn_lim.map(|s| s.limit as i64).unwrap())
     }
 }
 pub async fn rm_single_warn(
@@ -314,14 +301,8 @@ pub async fn get_disabled_command(db: &Database, chat_id: i64) -> DbResult<Vec<S
         return Ok(Vec::new());
     }
 
-    Ok(f.map(|d| {
-        d.get("disabled_commands")
-            .unwrap()
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|b| b.as_str().unwrap().to_owned())
-            .collect()
-    })
-    .unwrap())
+    Ok(
+        f.map(|d| d.disabled_commands.iter().map(|b| b.to_owned()).collect())
+            .unwrap(),
+    )
 }
