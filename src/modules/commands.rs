@@ -76,4 +76,10 @@ pub enum Command {
     Disable,
     #[command(description = "Enables a command")]
     Enable,
+    #[command(description = "Add filter for a keyword")]
+    Filter,
+    #[command(description = "list filters")]
+    Filters,
+    #[command(description = "Stop the use of a filter")]
+    Stop,
 }

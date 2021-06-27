@@ -2,12 +2,14 @@ extern crate teloxide;
 mod database;
 mod modules;
 mod util;
+use crate::util::enforce_gban;
 use async_once::AsyncOnce;
 use database::db_utils::{save_chat, save_user};
 use database::Db;
 use lazy_static::lazy_static;
 use modules::admin::*;
 use modules::disable::*;
+use modules::filters::*;
 use modules::misc::*;
 use modules::msg_delete::*;
 use modules::start::*;
@@ -19,8 +21,6 @@ use std::error::Error;
 use teloxide::prelude::*;
 use teloxide::utils::command::{parse_command, BotCommand as Cmd};
 use tokio_stream::wrappers::UnboundedReceiverStream;
-
-use crate::util::enforce_gban;
 
 pub type Cxt = UpdateWithCx<AutoSend<Bot>, Message>;
 pub type Ctx = UpdateWithCx<AutoSend<Bot>, CallbackQuery>;
@@ -48,8 +48,13 @@ async fn get_mdb() -> mongodb::Database {
 async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
     let mngdb = get_mdb().await;
     tokio::try_join!(save_user(&cx, &mngdb), save_chat(&cx, &mngdb))?;
+
+    /*
+    Gban and Chat Triggers
+    */
     if cx.update.chat.is_group() || cx.update.chat.is_supergroup() {
         tokio::try_join!(enforce_gban(&cx))?;
+        filter_reply(&cx).await?;
     }
     let txt = cx.update.text();
     if txt.is_none() {
@@ -98,6 +103,9 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Warns => warns(&cx).await?,
             Command::Disable => disable(&cx).await?,
             Command::Enable => enable(&cx).await?,
+            Command::Filter => filter(&cx).await?,
+            Command::Filters => filter_list(&cx).await?,
+            Command::Stop => remove_filter(&cx).await?,
         }
     }
     Ok(())

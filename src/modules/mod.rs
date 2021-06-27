@@ -1,6 +1,7 @@
 pub mod admin;
 pub mod commands;
 pub mod disable;
+pub mod filters;
 pub mod misc;
 pub mod msg_delete;
 pub mod start;
@@ -9,6 +10,7 @@ pub mod user;
 pub use admin::*;
 pub use commands::Command;
 pub use disable::*;
+pub use filters::*;
 pub use misc::*;
 pub use msg_delete::*;
 pub use start::*;

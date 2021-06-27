@@ -1,4 +1,4 @@
-use super::{Chat, DisableCommand, Gban, GbanStat, User, Warn, WarnKind, Warnlimit};
+use super::{Chat, DisableCommand, Filters, Gban, GbanStat, User, Warn, WarnKind, Warnlimit};
 use crate::{Cxt, TgErr};
 use mongodb::{bson::doc, Database};
 use teloxide::prelude::StreamExt;
@@ -29,6 +29,9 @@ fn gbanstat_collection(db: &Database) -> mongodb::Collection<GbanStat> {
 }
 fn disable_collection(db: &Database) -> mongodb::Collection<DisableCommand> {
     db.collection("DisableCommand")
+}
+fn chat_filters(db: &Database) -> mongodb::Collection<Filters> {
+    db.collection("ChatFilters")
 }
 pub async fn insert_user(db: &Database, us: &User) -> DbResult<mongodb::results::UpdateResult> {
     let user = user_collection(db);
@@ -264,6 +267,59 @@ pub async fn reset_warn(
     .await
 }
 
+pub async fn add_filter(db: &Database, fl: &Filters) -> DbResult<mongodb::results::UpdateResult> {
+    let fc = chat_filters(db);
+    fc.update_one(
+        doc! {"chat_id":fl.chat_id,"filter":&fl.filter},
+        doc! {"$set":{"reply":&fl.reply,"f_type":&fl.f_type}},
+        mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build(),
+    )
+    .await
+}
+pub async fn get_reply_filter(
+    db: &Database,
+    chat_id: i64,
+    filt: &str,
+) -> DbResult<Option<String>> {
+    let fc = chat_filters(db);
+    let find = fc
+        .find_one(doc! {"chat_id":chat_id,"filter":filt}, None)
+        .await?;
+    Ok(find.map(|f| (f.reply)))
+}
+
+pub async fn get_reply_type_filter(
+    db: &Database,
+    chat_id: i64,
+    filt: &str,
+) -> DbResult<Option<String>> {
+    let fc = chat_filters(db);
+    let find = fc
+        .find_one(doc! {"chat_id":chat_id,"filter":filt}, None)
+        .await?;
+    Ok(find.map(|f| f.f_type))
+}
+pub async fn list_filters(db: &Database, chat_id: i64) -> DbResult<Vec<String>> {
+    let fc = chat_filters(db);
+    let dist = fc
+        .distinct("filter", doc! {"chat_id":chat_id}, None)
+        .await?;
+    Ok(dist
+        .iter()
+        .map(|s| s.as_str().unwrap().to_owned())
+        .collect())
+}
+pub async fn rm_filter(
+    db: &Database,
+    chat_id: i64,
+    fit: &str,
+) -> DbResult<mongodb::results::DeleteResult> {
+    let fc = chat_filters(db);
+    fc.delete_one(doc! {"chat_id":chat_id,"filter":fit}, None)
+        .await
+}
 pub async fn disable_command(
     db: &Database,
     dc: &DisableCommand,

@@ -1,5 +1,6 @@
 pub mod db;
 pub mod db_utils;
+
 pub use db::Db;
 use serde::{Deserialize, Serialize};
 
@@ -44,4 +45,12 @@ pub struct Warnlimit {
 pub struct DisableCommand {
     pub chat_id: i64,
     pub disabled_commands: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Filters {
+    pub chat_id: i64,
+    pub filter: String,
+    pub reply: String,
+    pub f_type: String,
 }

@@ -49,6 +49,9 @@
 <li>
 <code>/disable &lt;command&gt;:</code> Disables the use of a command in a group.
 </li>
+<li>
+<code>/filter &lt;keyword&gt; &lt;reply&gt;:</code> Enables a trigger on <code>keyword</code> and replies with <code>reply</code> whenever it matches with keyword. All <code>document,stickers,audio,video,photo</code> can be used as a trigger replies.
+</li>
 </p>
 
 <h1>How to Use?</h1>

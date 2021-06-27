@@ -560,3 +560,32 @@ pub async fn check_command_disabled(cx: &Cxt, cmd: String) -> TgErr<()> {
     }
     Ok(())
 }
+
+pub enum FilterType {
+    Animation,
+    Audio,
+    Sticker,
+    Photos,
+    Document,
+    Text,
+    Voice,
+    Video,
+    Error,
+}
+
+impl FromStr for FilterType {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        match s {
+            "animation" => Ok(FilterType::Animation),
+            "audio" => Ok(FilterType::Audio),
+            "sticker" => Ok(FilterType::Sticker),
+            "photo" => Ok(FilterType::Photos),
+            "document" => Ok(FilterType::Document),
+            "text" => Ok(FilterType::Text),
+            "voice" => Ok(FilterType::Voice),
+            "video" => Ok(FilterType::Video),
+            _ => Ok(FilterType::Error),
+        }
+    }
+}
