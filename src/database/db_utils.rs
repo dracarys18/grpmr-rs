@@ -1,4 +1,7 @@
-use super::{Chat, DisableCommand, Filters, Gban, GbanStat, User, Warn, WarnKind, Warnlimit};
+use super::{
+    BlacklistFilter, BlacklistKind, Chat, DisableCommand, Filters, Gban, GbanStat, User, Warn,
+    WarnKind, Warnlimit,
+};
 use crate::{Cxt, TgErr};
 use mongodb::{bson::doc, Database};
 use teloxide::prelude::StreamExt;
@@ -32,6 +35,12 @@ fn disable_collection(db: &Database) -> mongodb::Collection<DisableCommand> {
 }
 fn chat_filters(db: &Database) -> mongodb::Collection<Filters> {
     db.collection("ChatFilters")
+}
+fn chat_blacklist(db: &Database) -> mongodb::Collection<BlacklistFilter> {
+    db.collection("ChatBlacklist")
+}
+fn chat_blacklist_mode(db: &Database) -> mongodb::Collection<BlacklistKind> {
+    db.collection("ChatBlacklistMode")
 }
 pub async fn insert_user(db: &Database, us: &User) -> DbResult<mongodb::results::UpdateResult> {
     let user = user_collection(db);
@@ -278,11 +287,7 @@ pub async fn add_filter(db: &Database, fl: &Filters) -> DbResult<mongodb::result
     )
     .await
 }
-pub async fn get_reply_filter(
-    db: &Database,
-    chat_id: i64,
-    filt: &str,
-) -> DbResult<Option<String>> {
+pub async fn get_reply_filter(db: &Database, chat_id: i64, filt: &str) -> DbResult<Option<String>> {
     let fc = chat_filters(db);
     let find = fc
         .find_one(doc! {"chat_id":chat_id,"filter":filt}, None)
@@ -319,6 +324,65 @@ pub async fn rm_filter(
     let fc = chat_filters(db);
     fc.delete_one(doc! {"chat_id":chat_id,"filter":fit}, None)
         .await
+}
+pub async fn add_blacklist(
+    db: &Database,
+    bl: &BlacklistFilter,
+) -> DbResult<mongodb::results::UpdateResult> {
+    let blc = chat_blacklist(db);
+    blc.update_one(
+        doc! {"chat_id":bl.chat_id},
+        doc! {"$set":{"blacklist":&bl.filter}},
+        mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build(),
+    )
+    .await
+}
+pub async fn get_blacklist(db: &Database, chat_id: i64) -> DbResult<Vec<String>> {
+    let blc = chat_blacklist(db);
+    let find = blc
+        .distinct("blacklist", doc! {"chat_id":chat_id}, None)
+        .await?;
+    Ok(find
+        .iter()
+        .map(|b| b.as_str().unwrap().to_owned())
+        .collect())
+}
+pub async fn rm_blacklist(
+    db: &Database,
+    bl: &BlacklistFilter,
+) -> DbResult<mongodb::results::DeleteResult> {
+    let blc = chat_blacklist(db);
+    blc.delete_one(doc! {"chat_id":bl.chat_id,"blacklist":&bl.filter}, None)
+        .await
+}
+pub async fn set_blacklist_mode(
+    db: &Database,
+    bm: &BlacklistKind,
+) -> DbResult<mongodb::results::UpdateResult> {
+    let blc = chat_blacklist_mode(db);
+    blc.update_one(
+        doc! {"chat_id":bm.chat_id},
+        doc! {"$set":{"kind":&bm.kind}},
+        mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build(),
+    )
+    .await
+}
+pub async fn get_blacklist_mode(db: &Database, id: i64) -> DbResult<String> {
+    let blc = chat_blacklist_mode(db);
+    let fi = blc.find_one(doc! {"chat_id":id}, None).await?;
+    if fi.is_none() {
+        let blk = &BlacklistKind {
+            chat_id: id,
+            kind: String::from("delete"),
+        };
+        set_blacklist_mode(db, blk).await?;
+        return Ok(String::from("delete"));
+    }
+    Ok(fi.map(|b| b.kind).unwrap())
 }
 pub async fn disable_command(
     db: &Database,

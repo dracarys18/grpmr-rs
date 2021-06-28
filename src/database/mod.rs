@@ -54,3 +54,13 @@ pub struct Filters {
     pub reply: String,
     pub f_type: String,
 }
+#[derive(Serialize, Deserialize)]
+pub struct BlacklistFilter {
+    pub chat_id: i64,
+    pub filter: String,
+}
+#[derive(Serialize, Deserialize)]
+pub struct BlacklistKind {
+    pub chat_id: i64,
+    pub kind: String,
+}

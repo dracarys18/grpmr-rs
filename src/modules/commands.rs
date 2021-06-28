@@ -82,4 +82,12 @@ pub enum Command {
     Filters,
     #[command(description = "Stop the use of a filter")]
     Stop,
+    #[command(description = "Add a blacklist word")]
+    Addblacklist,
+    #[command(description = "Remove a blacklist word")]
+    Rmblacklist,
+    #[command(description = "List current blacklists in the group")]
+    Blacklists,
+    #[command(description = "Set a blacklist mode")]
+    Blacklistmode,
 }

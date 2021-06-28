@@ -1,13 +1,29 @@
 use regex::RegexBuilder;
-use teloxide::{payloads::{SendAnimationSetters, SendAudioSetters, SendDocumentSetters, SendMessageSetters, SendPhotoSetters, SendStickerSetters, SendVideoSetters, SendVoiceSetters}, prelude::{GetChatId, Requester}, types::ParseMode, types::{InputFile, Message}, utils::command::parse_command};
+use teloxide::{
+    payloads::{
+        SendAnimationSetters, SendAudioSetters, SendDocumentSetters, SendMessageSetters,
+        SendPhotoSetters, SendStickerSetters, SendVideoSetters, SendVoiceSetters,
+    },
+    prelude::{GetChatId, Requester},
+    types::ParseMode,
+    types::{InputFile, Message},
+    utils::{command::parse_command, html::user_mention_or_link},
+};
 
 use crate::{
     database::{
-        db_utils::{add_filter, get_reply_filter, get_reply_type_filter, list_filters, rm_filter},
-        Filters,
+        db_utils::{
+            add_blacklist, add_filter, get_blacklist, get_blacklist_mode, get_reply_filter,
+            get_reply_type_filter, list_filters, rm_blacklist, rm_filter, set_blacklist_mode,
+        },
+        BlacklistFilter, BlacklistKind, Filters,
     },
     get_mdb,
-    util::{is_group, user_should_be_admin, FilterType},
+    modules::warn_user,
+    util::{
+        can_delete_messages, get_bot_id, is_group, is_user_admin, user_should_be_admin,
+        user_should_restrict, BlacklistMode, FilterType,
+    },
 };
 use crate::{Cxt, TgErr};
 
@@ -159,34 +175,55 @@ pub async fn filter_reply(cx: &Cxt) -> TgErr<()> {
             match parsed_ftype {
                 FilterType::Audio => {
                     let audio = InputFile::file_id(reply);
-                    cx.requester.send_audio(cx.chat_id(),audio).reply_to_message_id(cx.update.id).await?;
+                    cx.requester
+                        .send_audio(cx.chat_id(), audio)
+                        .reply_to_message_id(cx.update.id)
+                        .await?;
                 }
                 FilterType::Animation => {
                     let animation = InputFile::file_id(reply);
-                    cx.requester.send_animation(cx.chat_id(),animation).reply_to_message_id(cx.update.id).await?;
+                    cx.requester
+                        .send_animation(cx.chat_id(), animation)
+                        .reply_to_message_id(cx.update.id)
+                        .await?;
                 }
                 FilterType::Document => {
                     let document = InputFile::file_id(reply);
-                    cx.requester.send_document(cx.chat_id(),document).reply_to_message_id(cx.update.id).await?;
+                    cx.requester
+                        .send_document(cx.chat_id(), document)
+                        .reply_to_message_id(cx.update.id)
+                        .await?;
                 }
                 FilterType::Photos => {
                     let photo = InputFile::file_id(reply);
-                    cx.requester.send_photo(cx.chat_id(),photo).reply_to_message_id(cx.update.id).await?;
+                    cx.requester
+                        .send_photo(cx.chat_id(), photo)
+                        .reply_to_message_id(cx.update.id)
+                        .await?;
                 }
                 FilterType::Sticker => {
                     let sticker = InputFile::file_id(reply);
-                    cx.requester.send_sticker(cx.chat_id(),sticker).reply_to_message_id(cx.update.id).await?;
+                    cx.requester
+                        .send_sticker(cx.chat_id(), sticker)
+                        .reply_to_message_id(cx.update.id)
+                        .await?;
                 }
                 FilterType::Text => {
                     cx.reply_to(reply).await?;
                 }
                 FilterType::Video => {
                     let video = InputFile::file_id(reply);
-                    cx.requester.send_video(cx.chat_id(),video).reply_to_message_id(cx.update.id).await?;
+                    cx.requester
+                        .send_video(cx.chat_id(), video)
+                        .reply_to_message_id(cx.update.id)
+                        .await?;
                 }
                 FilterType::Voice => {
                     let voice = InputFile::file_id(reply);
-                    cx.requester.send_voice(cx.chat_id(), voice).reply_to_message_id(cx.update.id).await?;
+                    cx.requester
+                        .send_voice(cx.chat_id(), voice)
+                        .reply_to_message_id(cx.update.id)
+                        .await?;
                 }
                 _ => {}
             }
@@ -207,5 +244,247 @@ pub async fn filter_list(cx: &Cxt) -> TgErr<()> {
     ))
     .parse_mode(ParseMode::Html)
     .await?;
+    Ok(())
+}
+
+pub async fn blacklist_filter(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),
+        user_should_restrict(cx, cx.update.from().unwrap().id),
+        user_should_restrict(cx, get_bot_id(cx).await)
+    )?;
+    let db = get_mdb().await;
+    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    if args.is_empty() {
+        cx.reply_to("What should I blacklist").await?;
+        return Ok(());
+    }
+    let blacklist = args[0].to_owned();
+    let bl = &BlacklistFilter {
+        chat_id: cx.chat_id(),
+        filter: blacklist.clone(),
+    };
+    add_blacklist(&db, bl).await?;
+    let mode = get_blacklist_mode(&db, cx.chat_id()).await?;
+
+    //Because the default mode is delete we need to check for the permissions for other modes bot will take care about the permissions while setting the modes
+    if matches!(
+        mode.parse::<BlacklistMode>().unwrap(),
+        BlacklistMode::Delete
+    ) {
+        can_delete_messages(cx, get_bot_id(cx).await).await?;
+    }
+
+    cx.reply_to(format!(
+        "Added blacklist {}. The blacklist mode in the chat is <code>{}</code>",
+        &blacklist, &mode
+    ))
+    .parse_mode(ParseMode::Html)
+    .await?;
+    Ok(())
+}
+
+pub async fn list_blacklist(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),
+        user_should_be_admin(cx, cx.update.from().unwrap().id)
+    )?;
+    let db = get_mdb().await;
+    let blist = get_blacklist(&db, cx.chat_id()).await?;
+    if blist.is_empty() {
+        cx.reply_to("No blacklist set in this chat").await?;
+        return Ok(());
+    }
+    cx.reply_to(format!(
+        "The blacklist words in the chat are\n <code>- {}</code>",
+        blist.join("\n -")
+    ))
+    .parse_mode(ParseMode::Html)
+    .await?;
+    Ok(())
+}
+
+pub async fn remove_blacklist(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),
+        user_should_be_admin(cx, cx.update.from().unwrap().id)
+    )?;
+    let db = get_mdb().await;
+    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    if args.is_empty() {
+        cx.reply_to("Mention some blacklist to remove").await?;
+        return Ok(());
+    }
+    let bk = args[0].to_string();
+    let blist = get_blacklist(&db, cx.chat_id()).await?;
+    if blist.contains(&bk) {
+        let bl = &BlacklistFilter {
+            chat_id: cx.chat_id(),
+            filter: bk.clone(),
+        };
+        rm_blacklist(&db, bl).await?;
+        cx.reply_to(format!("Blacklist {} has been removed", &bk))
+            .await?;
+    } else {
+        cx.reply_to("This word isn't blacklisted here!").await?;
+    }
+    Ok(())
+}
+
+pub async fn set_blacklist_kind(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),
+        user_should_be_admin(cx, cx.update.from().unwrap().id)
+    )?;
+    let db = get_mdb().await;
+    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let bot_id = get_bot_id(cx).await;
+    if args.is_empty() {
+        cx.reply_to("Mention a blacklist mode").await?;
+        return Ok(());
+    }
+    let mode = args[0].parse::<BlacklistMode>().unwrap();
+    let chatmem = cx.requester.get_chat_member(cx.chat_id(), bot_id).await?;
+    match mode {
+        BlacklistMode::Warn => {
+            if chatmem.kind.can_restrict_members() {
+                let bm = &BlacklistKind {
+                    chat_id: cx.chat_id(),
+                    kind: String::from("warn"),
+                };
+                set_blacklist_mode(&db, bm).await?;
+                cx.reply_to("The blacklist mode is set to <i>warn</i> that means if you use the blacklisted word you will be warned, when your warns exceed the warn limit you will be banned or kicked depending upon the warn mode").parse_mode(ParseMode::Html).await?;
+            } else {
+                cx.reply_to("I can't restrict people here please give me the permission to do so")
+                    .await?;
+            }
+        }
+        BlacklistMode::Kick => {
+            if chatmem.kind.can_restrict_members() {
+                let bm = &BlacklistKind {
+                    chat_id: cx.chat_id(),
+                    kind: String::from("kick"),
+                };
+                set_blacklist_mode(&db, bm).await?;
+                cx.reply_to("The blacklist mode is set to <i>kick</i> that means if you use the blacklisted word you will be kicked from the group").parse_mode(ParseMode::Html).await?;
+            } else {
+                cx.reply_to("I can't restrict people here please give me the permission to do so")
+                    .await?;
+            }
+        }
+        BlacklistMode::Delete => {
+            if chatmem.kind.can_delete_messages() {
+                let bm = &BlacklistKind {
+                    chat_id: cx.chat_id(),
+                    kind: String::from("delete"),
+                };
+                set_blacklist_mode(&db, bm).await?;
+                cx.reply_to("The blacklist mode is set to <i>delete</i> that means if you use the blacklisted word the message will be deleted").parse_mode(ParseMode::Html).await?;
+            } else {
+                cx.reply_to("I can't delete messages here please give me the permission to do so")
+                    .await?;
+            }
+        }
+        BlacklistMode::Ban => {
+            if chatmem.kind.can_restrict_members() {
+                let bm = &BlacklistKind {
+                    chat_id: cx.chat_id(),
+                    kind: String::from("ban"),
+                };
+                set_blacklist_mode(&db, bm).await?;
+                cx.reply_to("The blacklist mode is set to <i>ban</i> that means if you use the blacklisted word you will be banned from the group").parse_mode(ParseMode::Html).await?;
+            } else {
+                cx.reply_to("I can't restrict people here please give me the permission to do so")
+                    .await?;
+            }
+        }
+        BlacklistMode::Error => {
+            cx.reply_to("Invalid blacklist mode").await?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn action_blacklist(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(
+        is_group(cx),                                           //Should be a group
+    )?;
+    let text = extract_text(&cx.update).await;
+    let bot_id = get_bot_id(&cx).await;
+    let db = get_mdb().await;
+    let culprit_id = cx.update.from().unwrap().id;
+    if text.is_none() {
+        return Ok(());
+    }
+    if culprit_id == bot_id {
+        return Ok(());
+    }
+    if is_user_admin(cx, culprit_id).await {
+        return Ok(());
+    }
+    let to_match = text.unwrap();
+    let blacklist = get_blacklist(&db, cx.chat_id()).await?;
+    let mode = get_blacklist_mode(&db, cx.chat_id()).await?;
+    let parsed_mode = mode.parse::<BlacklistMode>().unwrap();
+    let botmem = cx.requester.get_chat_member(cx.chat_id(), bot_id).await?;
+    let usmem = cx
+        .requester
+        .get_chat_member(cx.chat_id(), culprit_id)
+        .await?;
+    for pat in blacklist {
+        let pattern = format!(r#"( |^|[^\w]){}( |$|[^\w])"#, regex::escape(&pat));
+        let re = RegexBuilder::new(&pattern)
+            .case_insensitive(true)
+            .build()
+            .unwrap();
+        if re.is_match(&to_match) {
+            match parsed_mode {
+                BlacklistMode::Ban => {
+                    if botmem.kind.can_restrict_members() {
+                        cx.requester
+                            .kick_chat_member(cx.chat_id(), culprit_id)
+                            .await?;
+                        cx.reply_to(format!(
+                            "User{} has been banned for using blacklisted word <code>{}</code>",
+                            user_mention_or_link(&usmem.user),
+                            &pat
+                        ))
+                        .parse_mode(ParseMode::Html)
+                        .await?;
+                    }
+                }
+                BlacklistMode::Delete => {
+                    if botmem.kind.can_delete_messages() {
+                        cx.requester
+                            .delete_message(cx.chat_id(), cx.update.id)
+                            .await?;
+                    }
+                }
+                BlacklistMode::Kick => {
+                    if botmem.kind.can_restrict_members() {
+                        cx.requester
+                            .kick_chat_member(cx.chat_id(), culprit_id)
+                            .await?;
+                        cx.requester
+                            .unban_chat_member(cx.chat_id(), culprit_id)
+                            .await?;
+                        cx.reply_to(format!(
+                            "User {} has been kicked for using the blacklisted word {}",
+                            user_mention_or_link(&usmem.user),
+                            &pat
+                        ))
+                        .await?;
+                    }
+                }
+                BlacklistMode::Warn => {
+                    if botmem.kind.can_restrict_members() {
+                        let reason = format!("Use of blacklisted word {}", &pat);
+                        warn_user(cx, culprit_id, reason).await?;
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
     Ok(())
 }

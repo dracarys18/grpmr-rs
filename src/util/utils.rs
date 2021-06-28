@@ -589,3 +589,24 @@ impl FromStr for FilterType {
         }
     }
 }
+
+pub enum BlacklistMode {
+    Delete,
+    Warn,
+    Ban,
+    Kick,
+    Error,
+}
+
+impl FromStr for BlacklistMode {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        match s {
+            "delete" => Ok(BlacklistMode::Delete),
+            "warn" => Ok(BlacklistMode::Warn),
+            "ban" | "hard" => Ok(BlacklistMode::Ban),
+            "kick" | "soft" => Ok(BlacklistMode::Kick),
+            _ => Ok(BlacklistMode::Error),
+        }
+    }
+}

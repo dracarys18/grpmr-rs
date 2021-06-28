@@ -54,6 +54,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
     */
     if cx.update.chat.is_group() || cx.update.chat.is_supergroup() {
         tokio::try_join!(enforce_gban(&cx))?;
+        action_blacklist(&cx).await?;
         filter_reply(&cx).await?;
     }
     let txt = cx.update.text();
@@ -106,6 +107,10 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Filter => filter(&cx).await?,
             Command::Filters => filter_list(&cx).await?,
             Command::Stop => remove_filter(&cx).await?,
+            Command::Addblacklist => blacklist_filter(&cx).await?,
+            Command::Blacklists => list_blacklist(&cx).await?,
+            Command::Rmblacklist => remove_blacklist(&cx).await?,
+            Command::Blacklistmode => set_blacklist_kind(&cx).await?,
         }
     }
     Ok(())

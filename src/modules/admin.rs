@@ -5,7 +5,7 @@ use crate::database::db_utils::{
 use crate::database::{Warn, WarnKind, Warnlimit};
 use crate::util::{
     can_pin_messages, can_promote_members, can_send_text, check_command_disabled,
-    extract_text_id_from_reply, get_bot_id, get_time, is_group, is_user_restricted,
+    extract_text_id_from_reply, get_bot_id, get_time, is_group, is_user_admin, is_user_restricted,
     sudo_or_owner_filter, user_should_be_admin, user_should_restrict, LockType, PinMode, TimeUnit,
     WarnMode,
 };
@@ -922,46 +922,44 @@ pub async fn warn(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
-    let bot_id = get_bot_id(&cx).await;
-    let db = get_mdb().await;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
     if user_id.is_none() {
         cx.reply_to("No user was targeted").await?;
         return Ok(());
     }
-    if user_id.unwrap() == bot_id {
+    let reason = text.unwrap_or_else(String::new);
+    warn_user(cx, user_id.unwrap(), reason).await?;
+    Ok(())
+}
+
+pub async fn warn_user(cx: &Cxt, user_id: i64, reason: String) -> TgErr<()> {
+    let bot_id = get_bot_id(&cx).await;
+    let db = get_mdb().await;
+    if user_id == bot_id {
         cx.reply_to("I am not gonna warn myself fella! Try using your brain next time!")
             .await?;
         return Ok(());
     }
 
-    if user_id.unwrap() == *OWNER_ID || (*SUDO_USERS).contains(&user_id.unwrap()) {
-        cx.reply_to("I am not gonna warn my owner or my sudo users")
-            .await?;
+    if is_user_admin(cx, user_id).await {
+        cx.reply_to("I am not gonna warn an admin here!").await?;
         return Ok(());
     }
-    let reason = text.unwrap_or_else(String::new);
-    let w_count = get_warn_count(&db, cx.chat_id(), user_id.unwrap()).await?;
+    let w_count = get_warn_count(&db, cx.chat_id(), user_id).await?;
     let lim = get_warn_limit(&db, cx.chat_id()).await?;
     let mode = get_softwarn(&db, cx.chat_id()).await?;
     let warn = &Warn {
         chat_id: cx.chat_id(),
-        user_id: user_id.unwrap(),
+        user_id: user_id,
         reason: reason.clone(),
         count: (w_count + 1) as u64,
     };
-    if let Ok(mem) = cx
-        .requester
-        .get_chat_member(cx.chat_id(), user_id.unwrap())
-        .await
-    {
+    if let Ok(mem) = cx.requester.get_chat_member(cx.chat_id(), user_id).await {
         if (w_count + 1) >= lim {
-            cx.requester
-                .kick_chat_member(cx.chat_id(), user_id.unwrap())
-                .await?;
+            cx.requester.kick_chat_member(cx.chat_id(), user_id).await?;
             if mode {
                 cx.requester
-                    .unban_chat_member(cx.chat_id(), user_id.unwrap())
+                    .unban_chat_member(cx.chat_id(), user_id)
                     .await?;
                 cx.reply_to(format!(
                     "That's it get out ({}\\{}) warns, User has been kicked!",
@@ -977,10 +975,10 @@ pub async fn warn(cx: &Cxt) -> TgErr<()> {
                 ))
                 .await?;
             }
-            reset_warn(&db, cx.chat_id(), user_id.unwrap()).await?;
+            reset_warn(&db, cx.chat_id(), user_id).await?;
             return Ok(());
         }
-        let rm_warn_data = format!("rm_warn({},{})", cx.chat_id(), user_id.unwrap());
+        let rm_warn_data = format!("rm_warn({},{})", cx.chat_id(), user_id);
         let warn_button = InlineKeyboardButton::callback("Remove Warn".to_string(), rm_warn_data);
         insert_warn(&db, warn).await?;
         cx.reply_to(format!(
@@ -997,7 +995,6 @@ pub async fn warn(cx: &Cxt) -> TgErr<()> {
     }
     Ok(())
 }
-
 pub async fn handle_unwarn_button(cx: &Ctx) -> TgErr<()> {
     let db = get_mdb().await;
     let data = &cx.update.data;
