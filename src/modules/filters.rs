@@ -5,8 +5,8 @@ use teloxide::{
         SendPhotoSetters, SendStickerSetters, SendVideoSetters, SendVoiceSetters,
     },
     prelude::{GetChatId, Requester},
+    types::InputFile,
     types::ParseMode,
-    types::{InputFile, Message},
     utils::{command::parse_command, html::user_mention_or_link},
 };
 
@@ -21,43 +21,12 @@ use crate::{
     get_mdb,
     modules::warn_user,
     util::{
-        can_delete_messages, get_bot_id, is_group, is_user_admin, user_should_be_admin,
-        user_should_restrict, BlacklistMode, FilterType,
+        can_delete_messages, extract_filter_text, get_bot_id, get_filter_type, is_group,
+        is_user_admin, user_should_be_admin, user_should_restrict, BlacklistMode, FilterType,
     },
 };
 use crate::{Cxt, TgErr};
 
-pub async fn get_filter_type(msg: &Message) -> String {
-    if msg.audio().is_some() {
-        return "audio".to_string();
-    } else if msg.text().is_some() {
-        return "text".to_string();
-    } else if msg.document().is_some() {
-        return "document".to_string();
-    } else if msg.photo().is_some() {
-        return "photo".to_string();
-    } else if msg.video().is_some() {
-        return "video".to_string();
-    } else if msg.animation().is_some() {
-        return "animation".to_string();
-    } else if msg.voice().is_some() {
-        return "voice".to_string();
-    } else if msg.sticker().is_some() {
-        return "sticker".to_string();
-    }
-    String::new()
-}
-
-pub async fn extract_text(msg: &Message) -> Option<String> {
-    if msg.caption().is_some() {
-        return msg.caption().map(|s| s.to_string());
-    } else if msg.text().is_some() {
-        return msg.text().map(|s| s.to_string());
-    } else if msg.sticker().is_some() {
-        return msg.sticker().map(|s| s.clone().emoji.unwrap());
-    }
-    None
-}
 pub async fn filter(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
         is_group(cx),
@@ -154,7 +123,7 @@ pub async fn remove_filter(cx: &Cxt) -> TgErr<()> {
 
 pub async fn filter_reply(cx: &Cxt) -> TgErr<()> {
     let db = get_mdb().await;
-    let text = extract_text(&cx.update).await;
+    let text = extract_filter_text(&cx.update).await;
     if text.is_none() {
         return Ok(());
     }
@@ -409,7 +378,7 @@ pub async fn action_blacklist(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
         is_group(cx),                                           //Should be a group
     )?;
-    let text = extract_text(&cx.update).await;
+    let text = extract_filter_text(&cx.update).await;
     let bot_id = get_bot_id(&cx).await;
     let db = get_mdb().await;
     let culprit_id = cx.update.from().unwrap().id;
