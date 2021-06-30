@@ -1,9 +1,6 @@
 use regex::RegexBuilder;
 use teloxide::{
-    payloads::{
-        SendAnimationSetters, SendAudioSetters, SendDocumentSetters, SendMessageSetters,
-        SendPhotoSetters, SendStickerSetters, SendVideoSetters, SendVoiceSetters,
-    },
+    payloads::SendMessageSetters,
     prelude::{GetChatId, Requester},
     types::InputFile,
     types::ParseMode,
@@ -144,55 +141,34 @@ pub async fn filter_reply(cx: &Cxt) -> TgErr<()> {
             match parsed_ftype {
                 FilterType::Audio => {
                     let audio = InputFile::file_id(reply);
-                    cx.requester
-                        .send_audio(cx.chat_id(), audio)
-                        .reply_to_message_id(cx.update.id)
-                        .await?;
+                    cx.reply_audio(audio).await?;
                 }
                 FilterType::Animation => {
                     let animation = InputFile::file_id(reply);
-                    cx.requester
-                        .send_animation(cx.chat_id(), animation)
-                        .reply_to_message_id(cx.update.id)
-                        .await?;
+                    cx.reply_animation(animation).await?;
                 }
                 FilterType::Document => {
                     let document = InputFile::file_id(reply);
-                    cx.requester
-                        .send_document(cx.chat_id(), document)
-                        .reply_to_message_id(cx.update.id)
-                        .await?;
+                    cx.reply_document(document).await?;
                 }
                 FilterType::Photos => {
                     let photo = InputFile::file_id(reply);
-                    cx.requester
-                        .send_photo(cx.chat_id(), photo)
-                        .reply_to_message_id(cx.update.id)
-                        .await?;
+                    cx.reply_photo(photo).await?;
                 }
                 FilterType::Sticker => {
                     let sticker = InputFile::file_id(reply);
-                    cx.requester
-                        .send_sticker(cx.chat_id(), sticker)
-                        .reply_to_message_id(cx.update.id)
-                        .await?;
+                    cx.reply_sticker(sticker).await?;
                 }
                 FilterType::Text => {
                     cx.reply_to(reply).await?;
                 }
                 FilterType::Video => {
                     let video = InputFile::file_id(reply);
-                    cx.requester
-                        .send_video(cx.chat_id(), video)
-                        .reply_to_message_id(cx.update.id)
-                        .await?;
+                    cx.reply_video(video).await?;
                 }
                 FilterType::Voice => {
                     let voice = InputFile::file_id(reply);
-                    cx.requester
-                        .send_voice(cx.chat_id(), voice)
-                        .reply_to_message_id(cx.update.id)
-                        .await?;
+                    cx.reply_voice(voice).await?;
                 }
                 _ => {}
             }
