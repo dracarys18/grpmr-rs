@@ -280,7 +280,7 @@ pub async fn add_filter(db: &Database, fl: &Filters) -> DbResult<mongodb::result
     let fc = chat_filters(db);
     fc.update_one(
         doc! {"chat_id":fl.chat_id,"filter":&fl.filter},
-        doc! {"$set":{"reply":&fl.reply,"f_type":&fl.f_type}},
+        doc! {"$set":{"reply":&fl.reply,"f_type":&fl.f_type,"caption":&fl.caption}},
         mongodb::options::UpdateOptions::builder()
             .upsert(true)
             .build(),
@@ -305,6 +305,18 @@ pub async fn get_reply_type_filter(
         .find_one(doc! {"chat_id":chat_id,"filter":filt}, None)
         .await?;
     Ok(find.map(|f| f.f_type))
+}
+
+pub async fn get_reply_caption(
+    db: &Database,
+    chat_id: i64,
+    filt: &str,
+) -> DbResult<Option<String>> {
+    let fc = chat_filters(db);
+    let find = fc
+        .find_one(doc! {"chat_id":chat_id,"filter":filt}, None)
+        .await?;
+    Ok(find.map(|f| f.caption).unwrap_or(None))
 }
 pub async fn list_filters(db: &Database, chat_id: i64) -> DbResult<Vec<String>> {
     let fc = chat_filters(db);

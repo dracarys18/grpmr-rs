@@ -52,6 +52,7 @@ pub struct Filters {
     pub chat_id: i64,
     pub filter: String,
     pub reply: String,
+    pub caption: Option<String>,
     pub f_type: String,
 }
 #[derive(Serialize, Deserialize)]

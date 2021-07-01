@@ -1,6 +1,9 @@
 use regex::RegexBuilder;
 use teloxide::{
-    payloads::SendMessageSetters,
+    payloads::{
+        SendAnimationSetters, SendAudioSetters, SendDocumentSetters, SendMessageSetters,
+        SendPhotoSetters, SendVideoSetters, SendVoiceSetters,
+    },
     prelude::{GetChatId, Requester},
     types::InputFile,
     types::ParseMode,
@@ -10,8 +13,9 @@ use teloxide::{
 use crate::{
     database::{
         db_utils::{
-            add_blacklist, add_filter, get_blacklist, get_blacklist_mode, get_reply_filter,
-            get_reply_type_filter, list_filters, rm_blacklist, rm_filter, set_blacklist_mode,
+            add_blacklist, add_filter, get_blacklist, get_blacklist_mode, get_reply_caption,
+            get_reply_filter, get_reply_type_filter, list_filters, rm_blacklist, rm_filter,
+            set_blacklist_mode,
         },
         BlacklistFilter, BlacklistKind, Filters,
     },
@@ -39,10 +43,11 @@ pub async fn filter(cx: &Cxt) -> TgErr<()> {
                 let fil_type = get_filter_type(&rep_msg).await;
                 let parsed_type = fil_type.parse::<FilterType>().unwrap();
                 let reply;
+                let cap = rep_msg.caption().map(String::from);
                 match parsed_type {
                     FilterType::Text => reply = rep_msg.text().unwrap().to_string(),
                     FilterType::Animation => {
-                        reply = rep_msg.animation().unwrap().file_id.to_string()
+                        reply = rep_msg.animation().unwrap().file_id.to_string();
                     }
                     FilterType::Audio => reply = rep_msg.audio().unwrap().file_id.to_string(),
                     FilterType::Document => reply = rep_msg.document().unwrap().file_id.to_string(),
@@ -61,6 +66,7 @@ pub async fn filter(cx: &Cxt) -> TgErr<()> {
                     chat_id: cx.chat_id(),
                     filter: keyword.clone(),
                     reply: reply.clone(),
+                    caption: cap,
                     f_type: fil_type,
                 };
                 add_filter(&db, fl).await?;
@@ -77,6 +83,7 @@ pub async fn filter(cx: &Cxt) -> TgErr<()> {
                 chat_id: cx.chat_id(),
                 filter: keyword.clone(),
                 reply: rep,
+                caption: None,
                 f_type: "text".to_string(),
             };
             add_filter(&db, fl).await?;
@@ -138,22 +145,25 @@ pub async fn filter_reply(cx: &Cxt) -> TgErr<()> {
                 .unwrap();
             let reply = get_reply_filter(&db, cx.chat_id(), &pat).await?.unwrap();
             let parsed_ftype = f_type.parse::<FilterType>().unwrap();
+            let caption = get_reply_caption(&db, cx.chat_id(), &pat)
+                .await?
+                .unwrap_or_else(String::new);
             match parsed_ftype {
                 FilterType::Audio => {
                     let audio = InputFile::file_id(reply);
-                    cx.reply_audio(audio).await?;
+                    cx.reply_audio(audio).caption(caption).await?;
                 }
                 FilterType::Animation => {
                     let animation = InputFile::file_id(reply);
-                    cx.reply_animation(animation).await?;
+                    cx.reply_animation(animation).caption(caption).await?;
                 }
                 FilterType::Document => {
                     let document = InputFile::file_id(reply);
-                    cx.reply_document(document).await?;
+                    cx.reply_document(document).caption(caption).await?;
                 }
                 FilterType::Photos => {
                     let photo = InputFile::file_id(reply);
-                    cx.reply_photo(photo).await?;
+                    cx.reply_photo(photo).caption(caption).await?;
                 }
                 FilterType::Sticker => {
                     let sticker = InputFile::file_id(reply);
@@ -164,11 +174,11 @@ pub async fn filter_reply(cx: &Cxt) -> TgErr<()> {
                 }
                 FilterType::Video => {
                     let video = InputFile::file_id(reply);
-                    cx.reply_video(video).await?;
+                    cx.reply_video(video).caption(caption).await?;
                 }
                 FilterType::Voice => {
                     let voice = InputFile::file_id(reply);
-                    cx.reply_voice(voice).await?;
+                    cx.reply_voice(voice).caption(caption).await?;
                 }
                 _ => {}
             }
