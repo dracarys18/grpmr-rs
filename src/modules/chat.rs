@@ -4,10 +4,13 @@ use crate::{
 };
 use teloxide::{
     net::Download,
+    payloads::SendMessageSetters,
     prelude::{GetChatId, Requester},
-    types::{ChatKind, InputFile},
+    types::{ChatKind, InputFile, ParseMode},
+    utils::command::parse_command,
+    utils::html,
 };
-use tokio::fs;
+use tokio::{fs, try_join};
 
 pub async fn set_chatpic(cx: &Cxt) -> TgErr<()> {
     let bot_id = get_bot_id(cx).await;
@@ -72,5 +75,59 @@ pub async fn set_chatpic(cx: &Cxt) -> TgErr<()> {
         fs::remove_file(&path).await?;
     }
 
+    Ok(())
+}
+
+pub async fn set_chat_tile(cx: &Cxt) -> TgErr<()> {
+    try_join!(
+        can_change_info(cx, cx.update.from().unwrap().id),
+        can_change_info(cx, get_bot_id(cx).await)
+    )?;
+    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let mut title;
+    //If args is empty look for reply to message
+    if args.is_empty() {
+        if cx.update.reply_to_message().is_some() {
+            //Check if the reply_to_message as a text if not check if the message has any captions
+            title = cx
+                .update
+                .reply_to_message()
+                .unwrap()
+                .text()
+                .unwrap_or_else(|| {
+                    cx.update
+                        .reply_to_message()
+                        .unwrap()
+                        .caption()
+                        .unwrap_or("")
+                })
+                .to_string();
+        } else {
+            cx.reply_to("Provide me a title to set").await?;
+            return Ok(());
+        }
+    } else {
+        title = args.join(" ");
+    }
+    //Telegram has 255 character limit on the chat title (https://core.telegram.org/bots/api#setchattitle)
+    if title.len() > 255 {
+        cx.reply_to("The text has more than 255 characters so truncating it to 255 characters")
+            .await?;
+        title.truncate(255);
+    }
+
+    //Check if the title is empty possible when the user replies to a non-text message without caption
+    if title.is_empty() {
+        cx.reply_to("Title can't be empty").await?;
+        return Ok(());
+    }
+
+    cx.requester.set_chat_title(cx.chat_id(), &title).await?;
+    cx.reply_to(format!(
+        "Successfully set the chat title to '{}'",
+        html::code_inline(&title)
+    ))
+    .parse_mode(ParseMode::Html)
+    .await?;
     Ok(())
 }

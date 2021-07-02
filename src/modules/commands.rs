@@ -92,4 +92,6 @@ pub enum Command {
     Blacklistmode,
     #[command(description = "Set chat picture")]
     Setchatpic,
+    #[command(description = "Set chat title")]
+    Setchattitle,
 }

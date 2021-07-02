@@ -104,6 +104,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Rmblacklist => remove_blacklist(&cx).await?,
             Command::Blacklistmode => set_blacklist_kind(&cx).await?,
             Command::Setchatpic => set_chatpic(&cx).await?,
+            Command::Setchattitle => set_chat_tile(&cx).await?,
         }
     }
     Ok(())
