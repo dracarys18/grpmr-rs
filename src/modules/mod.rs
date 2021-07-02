@@ -1,5 +1,6 @@
 pub mod admin;
 pub mod bans;
+pub mod chat;
 pub mod commands;
 pub mod disable;
 pub mod filters;
@@ -12,6 +13,7 @@ pub mod user;
 pub mod warning;
 pub use admin::*;
 pub use bans::*;
+pub use chat::*;
 pub use commands::Command;
 pub use disable::*;
 pub use filters::*;

@@ -367,10 +367,14 @@ pub async fn action_blacklist(cx: &Cxt) -> TgErr<()> {
     let text = extract_filter_text(&cx.update).await;
     let bot_id = get_bot_id(&cx).await;
     let db = get_mdb().await;
-    let culprit_id = cx.update.from().unwrap().id;
+
+    if cx.update.from().is_none() {
+        return Ok(());
+    }
     if text.is_none() {
         return Ok(());
     }
+    let culprit_id = cx.update.from().unwrap().id;
     if culprit_id == bot_id {
         return Ok(());
     }

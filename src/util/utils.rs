@@ -304,6 +304,34 @@ pub async fn can_promote_members(cx: &Cxt, id: i64) -> TgErr<()> {
     ))
 }
 
+pub async fn can_change_info(cx: &Cxt, id: i64) -> TgErr<()> {
+    let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
+    if id == *OWNER_ID || (*SUDO_USERS).contains(&id) {
+        return Ok(());
+    }
+    match &mem.kind {
+        ChatMemberKind::Creator(_) => {
+            return Ok(());
+        }
+        ChatMemberKind::Administrator(_) => {
+            if mem.can_change_info() {
+                return Ok(());
+            }
+        }
+        _ => {}
+    }
+    if id == get_bot_id(cx).await {
+        cx.reply_to("I can't change group info here! Missing can_change_info permission")
+            .await?;
+    } else {
+        cx.reply_to("You can't change group info here! Missing can_change_info permission")
+            .await?;
+    }
+    Err(anyhow!(
+        "Can't change group info because user is missing can_change_info permissions"
+    ))
+}
+
 pub async fn owner_filter(uid: i64) -> TgErr<()> {
     if uid == *OWNER_ID {
         return Ok(());
