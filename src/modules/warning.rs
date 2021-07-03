@@ -33,35 +33,33 @@ pub async fn warn(cx: &Cxt) -> TgErr<()> {
     Ok(())
 }
 
-pub async fn warn_user(cx: &Cxt, user_id: i64, reason: String) -> TgErr<()> {
+pub async fn warn_user(cx: &Cxt, id: i64, reason: String) -> TgErr<()> {
     let bot_id = get_bot_id(&cx).await;
     let db = get_mdb().await;
-    if user_id == bot_id {
+    if id == bot_id {
         cx.reply_to("I am not gonna warn myself fella! Try using your brain next time!")
             .await?;
         return Ok(());
     }
 
-    if is_user_admin(cx, user_id).await {
+    if is_user_admin(cx, id).await {
         cx.reply_to("I am not gonna warn an admin here!").await?;
         return Ok(());
     }
-    let w_count = get_warn_count(&db, cx.chat_id(), user_id).await?;
+    let w_count = get_warn_count(&db, cx.chat_id(), id).await?;
     let lim = get_warn_limit(&db, cx.chat_id()).await?;
     let mode = get_softwarn(&db, cx.chat_id()).await?;
     let warn = &Warn {
         chat_id: cx.chat_id(),
-        user_id: user_id,
+        user_id: id,
         reason: reason.clone(),
         count: (w_count + 1) as u64,
     };
-    if let Ok(mem) = cx.requester.get_chat_member(cx.chat_id(), user_id).await {
+    if let Ok(mem) = cx.requester.get_chat_member(cx.chat_id(), id).await {
         if (w_count + 1) >= lim {
-            cx.requester.kick_chat_member(cx.chat_id(), user_id).await?;
+            cx.requester.kick_chat_member(cx.chat_id(), id).await?;
             if mode {
-                cx.requester
-                    .unban_chat_member(cx.chat_id(), user_id)
-                    .await?;
+                cx.requester.unban_chat_member(cx.chat_id(), id).await?;
                 cx.reply_to(format!(
                     "That's it get out ({}\\{}) warns, User has been kicked!",
                     &w_count + 1,
@@ -76,10 +74,10 @@ pub async fn warn_user(cx: &Cxt, user_id: i64, reason: String) -> TgErr<()> {
                 ))
                 .await?;
             }
-            reset_warn(&db, cx.chat_id(), user_id).await?;
+            reset_warn(&db, cx.chat_id(), id).await?;
             return Ok(());
         }
-        let rm_warn_data = format!("rm_warn({},{})", cx.chat_id(), user_id);
+        let rm_warn_data = format!("rm_warn({},{})", cx.chat_id(), id);
         let warn_button = InlineKeyboardButton::callback("Remove Warn".to_string(), rm_warn_data);
         insert_warn(&db, warn).await?;
         cx.reply_to(format!(

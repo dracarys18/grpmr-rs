@@ -64,7 +64,7 @@ pub async fn remove_log(cx: &Cxt) -> TgErr<()> {
         user_should_be_creator(cx, cx.update.from().unwrap().id)
     )?;
     let db = get_mdb().await;
-    if let Some(_) = get_log_channel(&db, cx.chat_id()).await? {
+    if get_log_channel(&db, cx.chat_id()).await?.is_some() {
         rm_log_channel(&db, cx.chat_id()).await?;
         cx.reply_to("The log channel has been unset").await?;
     } else {

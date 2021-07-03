@@ -253,11 +253,8 @@ pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
 
 pub async fn user_should_be_creator(cx: &Cxt, id: i64) -> TgErr<()> {
     let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
-    match &mem.kind {
-        ChatMemberKind::Creator(_) => {
-            return Ok(());
-        }
-        _ => {}
+    if matches!(&mem.status(), ChatMemberStatus::Creator) {
+        return Ok(());
     }
     Err(anyhow!("User is not a creator"))
 }
