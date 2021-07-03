@@ -249,6 +249,17 @@ pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
     ))
 }
 
+pub async fn user_should_be_creator(cx: &Cxt, id: i64) -> TgErr<()> {
+    let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
+    match &mem.kind {
+        ChatMemberKind::Creator(_) => {
+            return Ok(());
+        }
+        _ => {}
+    }
+    Err(anyhow!("User is not a creator"))
+}
+
 pub async fn can_delete_messages(cx: &Cxt, id: i64) -> TgErr<()> {
     let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
     if id == *OWNER_ID || (*SUDO_USERS).contains(&id) {

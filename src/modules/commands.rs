@@ -94,4 +94,8 @@ pub enum Command {
     Setchatpic,
     #[command(description = "Set chat title")]
     Setchattitle,
+    #[command(description = "Set a log channel")]
+    Setlog,
+    #[command(description = "Unset a log channel")]
+    Unsetlog,
 }

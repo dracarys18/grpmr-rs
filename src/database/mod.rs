@@ -65,3 +65,9 @@ pub struct BlacklistKind {
     pub chat_id: i64,
     pub kind: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct Logging {
+    pub chat_id: i64,
+    pub channel: i64,
+}

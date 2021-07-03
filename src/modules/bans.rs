@@ -2,10 +2,13 @@ use teloxide::{
     payloads::{KickChatMemberSetters, SendMessageSetters},
     prelude::{GetChatId, Requester},
     types::{ChatMemberStatus, ParseMode},
-    utils::html::user_mention_or_link,
+    utils::html::{self, user_mention_or_link},
 };
 
 use crate::{
+    database::db_utils::get_log_channel,
+    get_mdb,
+    modules::send_log,
     util::{
         check_command_disabled, extract_text_id_from_reply, get_bot_id, get_time, is_group,
         sudo_or_owner_filter, user_should_restrict, TimeUnit,
@@ -19,6 +22,7 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
+    let db = get_mdb().await;
     let bot_id = get_bot_id(&cx).await;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
     let reason = text.unwrap_or_else(|| String::from("None"));
@@ -76,6 +80,26 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
         .kick_chat_member(cx.chat_id(), user_id.unwrap())
         .await?;
     cx.reply_to(ban_text).parse_mode(ParseMode::Html).await?;
+
+    if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+        let admin = cx
+            .requester
+            .get_chat_member(cx.chat_id(), cx.update.from().unwrap().id)
+            .await?
+            .user;
+        let user = cx
+            .requester
+            .get_chat_member(cx.chat_id(), user_id.unwrap())
+            .await?
+            .user;
+        let logm = format!(
+            "Chat id: {}\n#BANNED\nAdmin: {}\nUser: {}",
+            html::bold(&cx.chat_id().to_string()),
+            html::user_mention(admin.id as i32, &admin.full_name()),
+            html::user_mention(user_id.unwrap() as i32, &user.full_name())
+        );
+        send_log(cx, &logm, l).await?;
+    }
     Ok(())
 }
 
@@ -87,6 +111,7 @@ pub async fn temp_ban(cx: &Cxt) -> TgErr<()> {
     )?;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
     let bot_id = get_bot_id(cx).await;
+    let db = get_mdb().await;
     if user_id.is_none() {
         cx.reply_to("No user was targetted").await?;
         return Ok(());
@@ -152,6 +177,26 @@ pub async fn temp_ban(cx: &Cxt) -> TgErr<()> {
         cx.reply_to(format!("<b>Banned for <i>{}</i></b> ", u.unwrap()))
             .parse_mode(ParseMode::Html)
             .await?;
+        if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+            let admin = cx
+                .requester
+                .get_chat_member(cx.chat_id(), cx.update.from().unwrap().id)
+                .await?
+                .user;
+            let mem = cx
+                .requester
+                .get_chat_member(cx.chat_id(), user_id.unwrap())
+                .await?;
+            let until = mem.kind.until_date().unwrap();
+            let logm = format!(
+                "Chat id: {}\n#TEMP_BANNED\nAdmin: {}\nUser: {}\n Until: {}\n",
+                html::bold(&cx.chat_id().to_string()),
+                html::user_mention(admin.id as i32, &admin.full_name()),
+                html::user_mention(user_id.unwrap() as i32, &mem.user.full_name()),
+                html::code_inline(&until.to_string())
+            );
+            send_log(cx, &logm, l).await?;
+        }
     } else {
         cx.reply_to("Can't get this user maybe he's not in the group or he deleted his account")
             .await?;
@@ -166,6 +211,7 @@ pub async fn unban(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
+    let db = get_mdb().await;
     let (user_id, _text) = extract_text_id_from_reply(cx).await;
     if user_id.is_none() {
         cx.reply_to("No user was targeted").await?;
@@ -194,6 +240,25 @@ pub async fn unban(cx: &Cxt) -> TgErr<()> {
         .parse_mode(ParseMode::Html)
         .await?;
 
+    if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+        let admin = cx
+            .requester
+            .get_chat_member(cx.chat_id(), cx.update.from().unwrap().id)
+            .await?
+            .user;
+        let user = cx
+            .requester
+            .get_chat_member(cx.chat_id(), user_id.unwrap())
+            .await?
+            .user;
+        let logm = format!(
+            "Chat id: {}\n#UNBANNED\nAdmin: {}\nUser: {}",
+            html::bold(&cx.chat_id().to_string()),
+            html::user_mention(admin.id as i32, &admin.full_name()),
+            html::user_mention(user_id.unwrap() as i32, &user.full_name())
+        );
+        send_log(cx, &logm, l).await?;
+    }
     Ok(())
 }
 
@@ -203,6 +268,7 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
+    let db = get_mdb().await;
     let bot_id = get_bot_id(&cx).await;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
     if user_id.is_none() {
@@ -264,6 +330,25 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
         .unban_chat_member(cx.chat_id(), user_id.unwrap())
         .await?;
     cx.reply_to(kick_text).parse_mode(ParseMode::Html).await?;
+    if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+        let admin = cx
+            .requester
+            .get_chat_member(cx.chat_id(), cx.update.from().unwrap().id)
+            .await?
+            .user;
+        let user = cx
+            .requester
+            .get_chat_member(cx.chat_id(), user_id.unwrap())
+            .await?
+            .user;
+        let logm = format!(
+            "Chat id: {}\n#KICKED\nAdmin: {}\nUser: {}",
+            html::bold(&cx.chat_id().to_string()),
+            html::user_mention(admin.id as i32, &admin.full_name()),
+            html::user_mention(user_id.unwrap() as i32, &user.full_name())
+        );
+        send_log(cx, &logm, l).await?;
+    }
     Ok(())
 }
 pub async fn kickme(cx: &Cxt, cmd: &str) -> TgErr<()> {
@@ -272,6 +357,7 @@ pub async fn kickme(cx: &Cxt, cmd: &str) -> TgErr<()> {
         user_should_restrict(cx, get_bot_id(cx).await),
         check_command_disabled(cx, String::from(cmd))
     )?;
+    let db = get_mdb().await;
     if let Some(user) = cx.update.from() {
         let user_id = user.id;
         if user_id == *OWNER_ID || (*SUDO_USERS).contains(&user_id) {
@@ -298,6 +384,19 @@ pub async fn kickme(cx: &Cxt, cmd: &str) -> TgErr<()> {
             .unban_chat_member(cx.chat_id(), user_id)
             .await?;
         cx.reply_to(kickme_text).await?;
+        if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+            let user = cx
+                .requester
+                .get_chat_member(cx.chat_id(), user_id)
+                .await?
+                .user;
+            let logm = format!(
+                "Chat id: {}\n#KICKME\nUser: {}",
+                html::bold(&cx.chat_id().to_string()),
+                html::user_mention(user_id as i32, &user.full_name())
+            );
+            send_log(cx, &logm, l).await?;
+        }
     } else {
         cx.reply_to("Can't get the info about the user").await?;
     }

@@ -1,6 +1,6 @@
 use super::{
-    BlacklistFilter, BlacklistKind, Chat, DisableCommand, Filters, Gban, GbanStat, User, Warn,
-    WarnKind, Warnlimit,
+    BlacklistFilter, BlacklistKind, Chat, DisableCommand, Filters, Gban, GbanStat, Logging, User,
+    Warn, WarnKind, Warnlimit,
 };
 use crate::{Cxt, TgErr};
 use mongodb::{bson::doc, Database};
@@ -41,6 +41,9 @@ fn chat_blacklist(db: &Database) -> mongodb::Collection<BlacklistFilter> {
 }
 fn chat_blacklist_mode(db: &Database) -> mongodb::Collection<BlacklistKind> {
     db.collection("ChatBlacklistMode")
+}
+fn log_collection(db: &Database) -> mongodb::Collection<Logging> {
+    db.collection("Logchannel")
 }
 pub async fn insert_user(db: &Database, us: &User) -> DbResult<mongodb::results::UpdateResult> {
     let user = user_collection(db);
@@ -428,4 +431,30 @@ pub async fn get_disabled_command(db: &Database, id: i64) -> DbResult<Vec<String
         f.map(|d| d.disabled_commands.iter().map(|b| b.to_owned()).collect())
             .unwrap(),
     )
+}
+
+pub async fn add_log_channel(
+    db: &Database,
+    lg: &Logging,
+) -> DbResult<mongodb::results::UpdateResult> {
+    let lc = log_collection(db);
+    lc.update_one(
+        doc! {"chat_id":lg.chat_id},
+        doc! {"$set":{"channel":lg.channel}},
+        mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build(),
+    )
+    .await
+}
+
+pub async fn rm_log_channel(db: &Database, id: i64) -> DbResult<mongodb::results::DeleteResult> {
+    let lc = log_collection(db);
+    lc.delete_one(doc! {"chat_id":id}, None).await
+}
+
+pub async fn get_log_channel(db: &Database, id: i64) -> DbResult<Option<i64>> {
+    let lc = log_collection(db);
+    let fi = lc.find_one(doc! {"chat_id":id}, None).await?;
+    Ok(fi.map(|l| l.channel))
 }
