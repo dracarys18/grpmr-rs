@@ -2,12 +2,18 @@ use teloxide::{
     payloads::{RestrictChatMemberSetters, SendMessageSetters},
     prelude::{GetChatId, Requester},
     types::{ChatMemberStatus, ChatPermissions, ParseMode},
-    utils::{command::parse_command, html::user_mention_or_link},
+    utils::{
+        command::parse_command,
+        html::{self, user_mention_or_link},
+    },
 };
 
 use crate::{
+    database::db_utils::get_log_channel,
+    get_mdb,
+    modules::send_log,
     util::{
-        can_send_text, extract_text_id_from_reply, get_bot_id, get_time, is_group,
+        can_send_text, extract_text_id_from_reply, get_bot_id, get_chat_title, get_time, is_group,
         is_user_restricted, sudo_or_owner_filter, user_should_restrict, LockType, TimeUnit,
     },
     Cxt, TgErr, OWNER_ID, SUDO_USERS,
@@ -19,6 +25,7 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
+    let db = get_mdb().await;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
     let bot_id = get_bot_id(cx).await;
     if user_id.is_none() {
@@ -92,6 +99,26 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
         cx.reply_to(format!("<b>Muted for <i>{}</i></b> ", u.unwrap()))
             .parse_mode(ParseMode::Html)
             .await?;
+        if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+            let admin = cx
+                .requester
+                .get_chat_member(cx.chat_id(), cx.update.from().unwrap().id)
+                .await?
+                .user;
+            let mem = cx
+                .requester
+                .get_chat_member(cx.chat_id(), user_id.unwrap())
+                .await?;
+            let until = mem.kind.until_date().unwrap();
+            let logm = format!(
+                "Chat title: {}\n#TEMP_MUTED\nAdmin: {}\nUser: {}\n Until: {}\n",
+                html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
+                html::user_mention(admin.id as i32, &admin.full_name()),
+                html::user_mention(user_id.unwrap() as i32, &mem.user.full_name()),
+                html::code_inline(&until.to_string())
+            );
+            send_log(cx, &logm, l).await?;
+        }
     } else {
         cx.reply_to("Can't get this user maybe he's not in the group or he deleted his account")
             .await?;
@@ -106,6 +133,7 @@ pub async fn mute(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
+    let db = get_mdb().await;
     let bot_id = get_bot_id(&cx).await;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
     if user_id.is_none() {
@@ -161,6 +189,25 @@ pub async fn mute(cx: &Cxt) -> TgErr<()> {
         .restrict_chat_member(cx.chat_id(), user_id.unwrap(), ChatPermissions::default())
         .await?;
     cx.reply_to(mute_text).parse_mode(ParseMode::Html).await?;
+    if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+        let admin = cx
+            .requester
+            .get_chat_member(cx.chat_id(), cx.update.from().unwrap().id)
+            .await?
+            .user;
+        let user = cx
+            .requester
+            .get_chat_member(cx.chat_id(), user_id.unwrap())
+            .await?
+            .user;
+        let logm = format!(
+            "Chat title: {}\n#MUTED\nAdmin: {}\nUser: {}",
+            html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
+            html::user_mention(admin.id as i32, &admin.full_name()),
+            html::user_mention(user_id.unwrap() as i32, &user.full_name())
+        );
+        send_log(cx, &logm, l).await?;
+    }
     Ok(())
 }
 pub async fn unmute(cx: &Cxt) -> TgErr<()> {

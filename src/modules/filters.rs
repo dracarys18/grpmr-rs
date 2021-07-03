@@ -7,23 +7,27 @@ use teloxide::{
     prelude::{GetChatId, Requester},
     types::InputFile,
     types::ParseMode,
-    utils::{command::parse_command, html::user_mention_or_link},
+    utils::{
+        command::parse_command,
+        html::{self, user_mention_or_link},
+    },
 };
 
 use crate::{
     database::{
         db_utils::{
-            add_blacklist, add_filter, get_blacklist, get_blacklist_mode, get_reply_caption,
-            get_reply_filter, get_reply_type_filter, list_filters, rm_blacklist, rm_filter,
-            set_blacklist_mode,
+            add_blacklist, add_filter, get_blacklist, get_blacklist_mode, get_log_channel,
+            get_reply_caption, get_reply_filter, get_reply_type_filter, list_filters, rm_blacklist,
+            rm_filter, set_blacklist_mode,
         },
         BlacklistFilter, BlacklistKind, Filters,
     },
     get_mdb,
-    modules::warn_user,
+    modules::{send_log, warn_user},
     util::{
-        can_delete_messages, extract_filter_text, get_bot_id, get_filter_type, is_group,
-        is_user_admin, user_should_be_admin, user_should_restrict, BlacklistMode, FilterType,
+        can_delete_messages, extract_filter_text, get_bot_id, get_chat_title, get_filter_type,
+        is_group, is_user_admin, user_should_be_admin, user_should_restrict, BlacklistMode,
+        FilterType,
     },
 };
 use crate::{Cxt, TgErr};
@@ -90,6 +94,20 @@ pub async fn filter(cx: &Cxt) -> TgErr<()> {
             cx.reply_to(format!("Saved filter <code>'{}'</code>", &keyword))
                 .parse_mode(ParseMode::Html)
                 .await?;
+            if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+                let admin = cx
+                    .requester
+                    .get_chat_member(cx.chat_id(), cx.update.from().unwrap().id)
+                    .await?
+                    .user;
+                let logm = format!(
+                    "Chat title: {}\n#FILTER\nAdmin: {}\nWord: {}",
+                    html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
+                    html::user_mention(admin.id as i32, &admin.full_name()),
+                    html::code_inline(&keyword)
+                );
+                send_log(cx, &logm, l).await?;
+            }
         }
     } else {
         cx.reply_to("Give me some keyword to filter").await?;
@@ -122,6 +140,20 @@ pub async fn remove_filter(cx: &Cxt) -> TgErr<()> {
     ))
     .parse_mode(ParseMode::Html)
     .await?;
+    if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+        let admin = cx
+            .requester
+            .get_chat_member(cx.chat_id(), cx.update.from().unwrap().id)
+            .await?
+            .user;
+        let logm = format!(
+            "Chat title: {}\n#FILTER_STOPPED\nAdmin: {}\nWord: {}",
+            html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
+            html::user_mention(admin.id as i32, &admin.full_name()),
+            html::code_inline(&keyword)
+        );
+        send_log(cx, &logm, l).await?;
+    }
     Ok(())
 }
 
@@ -236,6 +268,20 @@ pub async fn blacklist_filter(cx: &Cxt) -> TgErr<()> {
     ))
     .parse_mode(ParseMode::Html)
     .await?;
+    if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+        let admin = cx
+            .requester
+            .get_chat_member(cx.chat_id(), cx.update.from().unwrap().id)
+            .await?
+            .user;
+        let logm = format!(
+            "Chat title: {}\n#BLACKLIST\nAdmin: {}\nWord: {}",
+            html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
+            html::user_mention(admin.id as i32, &admin.full_name()),
+            html::code_inline(&blacklist)
+        );
+        send_log(cx, &logm, l).await?;
+    }
     Ok(())
 }
 
@@ -280,6 +326,20 @@ pub async fn remove_blacklist(cx: &Cxt) -> TgErr<()> {
         rm_blacklist(&db, bl).await?;
         cx.reply_to(format!("Blacklist {} has been removed", &bk))
             .await?;
+        if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+            let admin = cx
+                .requester
+                .get_chat_member(cx.chat_id(), cx.update.from().unwrap().id)
+                .await?
+                .user;
+            let logm = format!(
+                "Chat title: {}\n#BLACKLIST_REMOVED\nAdmin: {}\nWord: {}",
+                html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
+                html::user_mention(admin.id as i32, &admin.full_name()),
+                html::code_inline(&bk)
+            );
+            send_log(cx, &logm, l).await?;
+        }
     } else {
         cx.reply_to("This word isn't blacklisted here!").await?;
     }
