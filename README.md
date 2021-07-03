@@ -55,6 +55,8 @@
 <li>
 <code>Blacklist:</code> You can set any words as "blacklist" in your group and let the bot deal with whoever sends the blacklisted words automatically. The modes which are available currently are <code>Warn , Ban , Kick , Delete</code>
 </li>
+<li><code>Chat Methods:</code> You can set chat title, chat picture directly from the bot</li>
+<li><code>Logging: </code> Recent actions are great but you can't see the changes that are older than 48 hours. So you can set-up a custom log channels to log the group properly and  access it whenever you want.</li>
 </p>
 
 <h1>How to Use?</h1>
