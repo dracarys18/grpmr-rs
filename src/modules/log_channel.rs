@@ -11,7 +11,7 @@ use crate::{
         Logging,
     },
     get_mdb,
-    util::{get_bot_id, is_group, user_should_be_creator},
+    util::{get_bot_id, get_chat_title, is_group, user_should_be_creator},
     Cxt, TgErr,
 };
 
@@ -37,8 +37,9 @@ pub async fn add_logc(cx: &Cxt) -> TgErr<()> {
                 };
                 add_log_channel(&db, &lg).await?;
                 cx.reply_to(format!(
-                    "Added log channel for this chat\nThe channel id of the log channel is:{}",
-                    html::code_inline(&c_id.to_string())
+                    "Added log channel for this chat\nChannel id:{}\nChannel Name:{}",
+                    html::code_inline(&c_id.to_string()),
+                    html::code_inline(&get_chat_title(cx, c_id).await.unwrap())
                 ))
                 .parse_mode(ParseMode::Html)
                 .await?;

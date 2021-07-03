@@ -5,7 +5,9 @@ use crate::database::db_utils::{
 use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use anyhow::anyhow;
 use teloxide::prelude::*;
-use teloxide::types::{ChatMemberKind, ChatMemberStatus, MessageEntity, MessageEntityKind};
+use teloxide::types::{
+    ChatKind, ChatMemberKind, ChatMemberStatus, MessageEntity, MessageEntityKind,
+};
 
 pub async fn get_bot_id(cx: &Cxt) -> i64 {
     return cx.requester.get_me().await.unwrap().user.id;
@@ -444,6 +446,15 @@ pub async fn extract_filter_text(msg: &Message) -> Option<String> {
         return msg.text().map(|s| s.to_string());
     } else if msg.sticker().is_some() {
         return msg.sticker().map(|s| s.clone().emoji.unwrap());
+    }
+    None
+}
+
+pub async fn get_chat_title(cx: &Cxt, chat_id: i64) -> Option<String> {
+    if let Ok(chat) = cx.requester.get_chat(chat_id).await {
+        if let ChatKind::Public(c) = chat.kind {
+            return c.title;
+        }
     }
     None
 }
