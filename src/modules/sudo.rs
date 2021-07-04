@@ -15,7 +15,7 @@ use teloxide::utils::html;
 
 pub async fn leavechat(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(owner_filter(cx.update.from().unwrap().id),)?;
-    let (_, txt) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, txt) = parse_command(cx.update.text().unwrap(), "consts::BOT_NAME").unwrap();
     let args = txt.get(0);
     if args.is_none() {
         cx.reply_to("Mention a chat id to leave").await?;
@@ -193,7 +193,7 @@ pub async fn gbanstat(cx: &Cxt) -> TgErr<()> {
         is_group(cx),
         user_should_be_admin(cx, cx.update.from().unwrap().id),
     )?;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), "consts::BOT_NAME").unwrap();
     let db = get_mdb().await;
     if args.is_empty() {
         cx.reply_to("What should I do with this?").await?;

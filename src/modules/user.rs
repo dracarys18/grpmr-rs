@@ -10,7 +10,7 @@ pub async fn info(cx: &Cxt, cmd: &str) -> TgErr<()> {
     tokio::try_join!(check_command_disabled(cx, String::from(cmd)))?;
     let (user_id, _) = extract_text_id_from_reply(cx).await;
     let db = get_mdb().await;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), "consts::BOT_NAME").unwrap();
     let chat = cx.update.chat.clone();
     let mut user = None;
     if user_id.is_some() && (chat.is_group() || chat.is_supergroup()) {

@@ -1,5 +1,5 @@
 use crate::{
-    util::{can_change_info, get_bot_id, get_filter_type, FilterType},
+    util::{can_change_info, consts, get_bot_id, get_filter_type, FilterType},
     Cxt, TgErr,
 };
 use teloxide::{
@@ -83,7 +83,7 @@ pub async fn set_chat_tile(cx: &Cxt) -> TgErr<()> {
         can_change_info(cx, cx.update.from().unwrap().id),
         can_change_info(cx, get_bot_id(cx).await)
     )?;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), consts::BOT_NAME).unwrap();
     let mut title;
     //If args is empty look for reply to message
     if args.is_empty() {

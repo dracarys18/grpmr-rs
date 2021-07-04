@@ -1,6 +1,6 @@
 use crate::util::{
-    can_pin_messages, can_promote_members, check_command_disabled, extract_text_id_from_reply,
-    get_bot_id, is_group, user_should_be_admin, PinMode,
+    can_pin_messages, can_promote_members, check_command_disabled, consts,
+    extract_text_id_from_reply, get_bot_id, is_group, user_should_be_admin, PinMode,
 };
 use crate::{Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use std::str::FromStr;
@@ -16,7 +16,7 @@ pub async fn pin(cx: &Cxt) -> TgErr<()> {
         can_pin_messages(cx, get_bot_id(cx).await),
         can_pin_messages(cx, cx.update.from().unwrap().id)
     )?;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), consts::BOT_NAME).unwrap();
     if let Some(mes) = cx.update.reply_to_message() {
         if !args.is_empty() {
             let pinmode = PinMode::from_str(&args[0].to_lowercase()).unwrap();

@@ -2,7 +2,7 @@ extern crate teloxide;
 mod database;
 mod modules;
 mod util;
-use crate::util::enforce_gban;
+use crate::util::{consts, enforce_gban};
 use async_once::AsyncOnce;
 use database::db_utils::{save_chat, save_user};
 use database::Db;
@@ -53,9 +53,9 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
     if txt.is_none() {
         return Ok(());
     }
-    let command = Cmd::parse(txt.unwrap(), "grpmr_bot");
+    let command = Cmd::parse(txt.unwrap(), consts::BOT_NAME);
     if let Ok(c) = command {
-        let (cmnd, _) = parse_command(txt.unwrap(), "grpmr_bot").unwrap();
+        let (cmnd, _) = parse_command(txt.unwrap(), consts::BOT_NAME).unwrap();
         match c {
             Command::Ban => {
                 ban(&cx).await?;

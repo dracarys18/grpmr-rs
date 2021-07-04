@@ -3,7 +3,7 @@ use teloxide::utils::command::parse_command;
 
 use crate::database::db_utils::{disable_command, get_disabled_command};
 use crate::database::DisableCommand;
-use crate::util::{is_group, user_should_be_admin, DisableAble};
+use crate::util::{consts, is_group, user_should_be_admin, DisableAble};
 use crate::{get_mdb, Cxt, TgErr};
 
 pub async fn disable(cx: &Cxt) -> TgErr<()> {
@@ -12,7 +12,7 @@ pub async fn disable(cx: &Cxt) -> TgErr<()> {
         user_should_be_admin(cx, cx.update.from().unwrap().id)
     )?;
     let db = get_mdb().await;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), consts::BOT_NAME).unwrap();
 
     if args.is_empty() {
         cx.reply_to("What should I disable").await?;
@@ -41,7 +41,7 @@ pub async fn enable(cx: &Cxt) -> TgErr<()> {
         is_group(cx),
         user_should_be_admin(cx, cx.update.from().unwrap().id)
     )?;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), "").unwrap();
     let db = get_mdb().await;
     if args.is_empty() {
         cx.reply_to("What should I disable").await?;

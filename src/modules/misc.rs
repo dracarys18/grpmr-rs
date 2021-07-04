@@ -9,7 +9,7 @@ use teloxide::utils::command::parse_command;
 
 pub async fn ud(cx: &Cxt, cmd: &str) -> TgErr<()> {
     tokio::try_join!(check_command_disabled(cx, String::from(cmd)))?;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), "consts::BOT_NAME").unwrap();
     if args.is_empty() {
         cx.reply_to("Please enter a keyword to search").await?;
         return Ok(());
@@ -56,7 +56,7 @@ pub async fn ud(cx: &Cxt, cmd: &str) -> TgErr<()> {
 pub async fn katbin(cx: &Cxt, cmd: &str) -> TgErr<()> {
     tokio::try_join!(check_command_disabled(cx, String::from(cmd)))?;
     let message = &cx.update;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), "consts::BOT_NAME").unwrap();
     let mut _data = String::new();
     if args.is_empty() {
         if let Some(m) = message.reply_to_message() {

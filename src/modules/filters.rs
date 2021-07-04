@@ -25,9 +25,9 @@ use crate::{
     get_mdb,
     modules::{send_log, warn_user},
     util::{
-        can_delete_messages, extract_filter_text, get_bot_id, get_chat_title, get_filter_type,
-        is_group, is_user_admin, user_should_be_admin, user_should_restrict, BlacklistMode,
-        FilterType,
+        can_delete_messages, consts, extract_filter_text, get_bot_id, get_chat_title,
+        get_filter_type, is_group, is_user_admin, user_should_be_admin, user_should_restrict,
+        BlacklistMode, FilterType,
     },
 };
 use crate::{Cxt, TgErr};
@@ -38,7 +38,7 @@ pub async fn filter(cx: &Cxt) -> TgErr<()> {
         user_should_be_admin(cx, cx.update.from().unwrap().id)
     )?;
     let db = get_mdb().await;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), consts::BOT_NAME).unwrap();
     if !args.is_empty() {
         let keyword = args[0].to_string();
         if args.get(1).is_none() {
@@ -121,7 +121,7 @@ pub async fn remove_filter(cx: &Cxt) -> TgErr<()> {
         user_should_be_admin(cx, cx.update.from().unwrap().id),
     )?;
     let db = get_mdb().await;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), consts::BOT_NAME).unwrap();
     if args.is_empty() {
         cx.reply_to("Mention some filter keyword to stop").await?;
         return Ok(());
@@ -241,7 +241,7 @@ pub async fn blacklist_filter(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, get_bot_id(cx).await)
     )?;
     let db = get_mdb().await;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), consts::BOT_NAME).unwrap();
     if args.is_empty() {
         cx.reply_to("What should I blacklist").await?;
         return Ok(());
@@ -311,7 +311,7 @@ pub async fn remove_blacklist(cx: &Cxt) -> TgErr<()> {
         user_should_be_admin(cx, cx.update.from().unwrap().id)
     )?;
     let db = get_mdb().await;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), "consts::BOT_NAME").unwrap();
     if args.is_empty() {
         cx.reply_to("Mention some blacklist to remove").await?;
         return Ok(());
@@ -352,7 +352,7 @@ pub async fn set_blacklist_kind(cx: &Cxt) -> TgErr<()> {
         user_should_be_admin(cx, cx.update.from().unwrap().id)
     )?;
     let db = get_mdb().await;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), "consts::BOT_NAME").unwrap();
     let bot_id = get_bot_id(cx).await;
     if args.is_empty() {
         cx.reply_to("Mention a blacklist mode").await?;

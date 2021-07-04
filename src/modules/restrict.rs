@@ -258,7 +258,7 @@ pub async fn lock(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), "consts::BOT_NAME").unwrap();
     if args.is_empty() {
         cx.reply_to("What should I lock?").await?;
         return Ok(());
@@ -331,7 +331,7 @@ pub async fn unlock(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, get_bot_id(cx).await),         //Bot Should have restrict rights
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "grpmr_bot").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), "consts::BOT_NAME").unwrap();
     if args.is_empty() {
         cx.reply_to("What should I unlock?").await?;
         return Ok(());
