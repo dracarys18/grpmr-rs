@@ -1,7 +1,10 @@
-use crate::util::{can_delete_messages, get_bot_id, is_group};
-use crate::{Cxt, TgErr};
+use crate::database::db_utils::get_log_channel;
+use crate::modules::send_log;
+use crate::util::{can_delete_messages, get_bot_id, get_chat_title, is_group};
+use crate::{get_mdb, Cxt, TgErr};
 use teloxide::prelude::*;
 use teloxide::types::ParseMode;
+use teloxide::utils::html;
 use tokio::time::Duration;
 pub async fn delete(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
@@ -44,6 +47,7 @@ pub async fn purge(cx: &Cxt) -> TgErr<()> {
         can_delete_messages(cx, get_bot_id(cx).await),
         can_delete_messages(cx, cx.update.from().unwrap().id),
     )?;
+    let db = get_mdb().await;
     let mut count: u32 = 0;
     if let Some(msg) = cx.update.reply_to_message() {
         let msg_id = msg.id;
@@ -84,6 +88,20 @@ pub async fn purge(cx: &Cxt) -> TgErr<()> {
         .requester
         .send_message(cx.chat_id(), format!("Purged {} messages", count))
         .await?;
+    if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
+        let admin = cx
+            .requester
+            .get_chat_member(cx.chat_id(), cx.update.from().unwrap().id)
+            .await?
+            .user;
+        let logm = format!(
+            "Chat title: {}\n#PURGE\nAdmin: {}\nNo of messages: {}",
+            html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
+            html::user_mention(admin.id as i32, &admin.full_name()),
+            html::code_inline(&count.to_string())
+        );
+        send_log(cx, &logm, l).await?;
+    }
     tokio::time::sleep(Duration::from_secs(4)).await;
     cx.requester.delete_message(cx.chat_id(), msg.id).await?;
     Ok(())
