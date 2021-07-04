@@ -8,7 +8,7 @@ use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::*;
 use teloxide::types::{ChatKind, ChatMemberStatus, ParseMode};
 use teloxide::utils::command::parse_command;
-use teloxide::utils::html::{user_mention, user_mention_or_link};
+use teloxide::utils::html::{self, user_mention, user_mention_or_link};
 
 pub async fn pin(cx: &Cxt) -> TgErr<()> {
     tokio::try_join!(
@@ -18,6 +18,7 @@ pub async fn pin(cx: &Cxt) -> TgErr<()> {
     )?;
     let (_, args) = parse_command(cx.update.text().unwrap(), consts::BOT_NAME).unwrap();
     if let Some(mes) = cx.update.reply_to_message() {
+        let pinmsg = html::link(mes.url().unwrap().as_str(), "this message");
         if !args.is_empty() {
             let pinmode = PinMode::from_str(&args[0].to_lowercase()).unwrap();
             match pinmode {
@@ -26,14 +27,20 @@ pub async fn pin(cx: &Cxt) -> TgErr<()> {
                         .pin_chat_message(cx.chat_id(), mes.id)
                         .disable_notification(false)
                         .await?;
-                    cx.reply_to("Pinned Loudly").await?;
+                    cx.reply_to(format!("Pinned {} Loudly", &pinmsg))
+                        .disable_web_page_preview(true)
+                        .parse_mode(ParseMode::Html)
+                        .await?;
                 }
                 PinMode::Silent => {
                     cx.requester
                         .pin_chat_message(cx.chat_id(), mes.id)
                         .disable_notification(true)
                         .await?;
-                    cx.reply_to("Pinned Silently").await?;
+                    cx.reply_to(format!("Pinned {} Silently", &pinmsg))
+                        .disable_web_page_preview(true)
+                        .parse_mode(ParseMode::Html)
+                        .await?;
                 }
                 PinMode::Error => {
                     cx.reply_to("Invalid PinMode! Available pinmodes are loud,hard,violent,silent")
@@ -45,7 +52,10 @@ pub async fn pin(cx: &Cxt) -> TgErr<()> {
                 .pin_chat_message(cx.chat_id(), mes.id)
                 .disable_notification(false)
                 .await?;
-            cx.reply_to("Pinned").await?;
+            cx.reply_to(format!("Pinned {}", &pinmsg))
+                .disable_web_page_preview(true)
+                .parse_mode(ParseMode::Html)
+                .await?;
         }
     } else {
         cx.reply_to("Reply to some message to pin").await?;
@@ -67,7 +77,13 @@ pub async fn unpin(cx: &Cxt) -> TgErr<()> {
             .await
         {
             Ok(_) => {
-                cx.reply_to("Unpinned the mentioned message").await?;
+                cx.reply_to(format!(
+                    "Unpinned {}",
+                    html::link(mes.url().unwrap().as_str(), "this message")
+                ))
+                .disable_web_page_preview(true)
+                .parse_mode(ParseMode::Html)
+                .await?;
             }
             Err(_) => {
                 cx.reply_to("The mentioned message was never pinned")
