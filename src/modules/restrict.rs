@@ -96,7 +96,7 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
             .restrict_chat_member(cx.chat_id(), user_id.unwrap(), ChatPermissions::default())
             .until_date(cx.update.date as u64 + t)
             .await?;
-        cx.reply_to(format!("<b>Muted for <i>{}</i></b> ", u.unwrap()))
+        cx.reply_to(format!("<b>Muted for <i>{}</i></b> ", u.as_ref().unwrap()))
             .parse_mode(ParseMode::Html)
             .await?;
         if let Some(l) = get_log_channel(&db, cx.chat_id()).await? {
@@ -109,13 +109,12 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
                 .requester
                 .get_chat_member(cx.chat_id(), user_id.unwrap())
                 .await?;
-            let until = mem.kind.until_date().unwrap();
             let logm = format!(
-                "Chat title: {}\n#TEMP_MUTED\nAdmin: {}\nUser: {}\n Until: {}\n",
+                "Chat title: {}\n#TEMP_MUTED\nAdmin: {}\nUser: {}\n For: {}\n",
                 html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
                 html::user_mention(admin.id as i32, &admin.full_name()),
                 html::user_mention(user_id.unwrap() as i32, &mem.user.full_name()),
-                html::code_inline(&until.to_string())
+                html::code_inline(&u.unwrap().to_string())
             );
             send_log(cx, &logm, l).await?;
         }
