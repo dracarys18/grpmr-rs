@@ -98,4 +98,8 @@ pub enum Command {
     Setlog,
     #[command(description = "Unset a log channel")]
     Unsetlog,
+    #[command(description = "Report a user")]
+    Report,
+    #[command(description = "Report setting of a group")]
+    Reports,
 }

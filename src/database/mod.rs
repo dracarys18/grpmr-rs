@@ -71,3 +71,9 @@ pub struct Logging {
     pub chat_id: i64,
     pub channel: i64,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct Reporting {
+    pub chat_id: i64,
+    pub allowed: bool,
+}

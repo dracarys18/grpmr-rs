@@ -1,8 +1,11 @@
+use crate::database::db_utils::{get_report_setting, set_report_setting};
+use crate::database::Reporting;
 use crate::util::{
     can_pin_messages, can_promote_members, check_command_disabled, consts,
-    extract_text_id_from_reply, get_bot_id, is_group, user_should_be_admin, PinMode,
+    extract_text_id_from_reply, get_bot_id, get_chat_title, is_group, is_user_admin,
+    user_should_be_admin, PinMode,
 };
-use crate::{Cxt, TgErr, OWNER_ID, SUDO_USERS};
+use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use std::str::FromStr;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::*;
@@ -268,16 +271,119 @@ pub async fn adminlist(cx: &Cxt, cmd: &str) -> TgErr<()> {
     let chatmem = cx.requester.get_chat_administrators(cx.chat_id()).await?;
     let adminlist = chatmem
         .iter()
-        .map(|mem| {
-            format!(
-                "- {}",
-                user_mention(mem.user.id, &mem.user.full_name())
-            )
-        })
+        .map(|mem| format!("- {}", user_mention(mem.user.id, &mem.user.full_name())))
         .collect::<Vec<String>>();
     cx.reply_to(format!(
         "<b>Admin's in this group:</b>\n{}",
         adminlist.join("\n")
+    ))
+    .parse_mode(ParseMode::Html)
+    .await?;
+    Ok(())
+}
+
+pub async fn report_set(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(is_group(cx))?;
+    let db = get_mdb().await;
+    let (_, arg) = parse_command(cx.update.text().unwrap(), consts::BOT_NAME).unwrap();
+    if arg.is_empty() {
+        cx.reply_to(format!(
+            "Invalid option!\nUsage: {}",
+            html::code_inline("/reports on/off")
+        ))
+        .parse_mode(ParseMode::Html)
+        .await?;
+        return Ok(());
+    }
+    let option = arg[0].to_lowercase();
+    match option.as_str() {
+        "on" => {
+            let r = Reporting {
+                chat_id: cx.chat_id(),
+                allowed: true,
+            };
+            set_report_setting(&db, &r).await?;
+            cx.reply_to("Reporting has been turned on for this chat now user's can report any users by sending /report").await?;
+        }
+        "off" => {
+            let r = Reporting {
+                chat_id: cx.chat_id(),
+                allowed: false,
+            };
+            set_report_setting(&db, &r).await?;
+            cx.reply_to("Reporting has been turned on for this chat now user's can report any users by sending /report").await?;
+        }
+        _ => {
+            cx.reply_to(format!(
+                "Invalid option!\nUsage: {}",
+                html::code_inline("/reports on/off")
+            ))
+            .parse_mode(ParseMode::Html)
+            .await?;
+        }
+    }
+    Ok(())
+}
+pub async fn report(cx: &Cxt) -> TgErr<()> {
+    tokio::try_join!(is_group(cx))?;
+    let db = get_mdb().await;
+
+    // Early return if the reporting is false in a group or someone trying to bluetext spam
+    if !get_report_setting(&db, cx.chat_id()).await? || cx.update.reply_to_message().is_none() {
+        return Ok(());
+    }
+    let repo_msg = cx.update.reply_to_message().unwrap();
+    let culprit = repo_msg.from().unwrap();
+
+    if culprit.id == get_bot_id(cx).await {
+        cx.reply_to("I am not reporting myself you cretin").await?;
+        return Ok(());
+    }
+
+    //User is reporting himself, spam?
+    if culprit.id == cx.update.from().unwrap().id {
+        cx.reply_to("Why are you reporting yourself").await?;
+        return Ok(());
+    }
+
+    //Ignore if user is trying to report an admin
+    if is_user_admin(cx, culprit.id).await {
+        return Ok(());
+    }
+
+    let adminlist = cx.requester.get_chat_administrators(cx.chat_id()).await?;
+    let report_msg = format!(
+        "Chat Title: {}\nReport Message: {}\nUser: {}\nReported User: {}",
+        html::code_inline(get_chat_title(cx, cx.chat_id()).await.unwrap().as_str()),
+        html::link(repo_msg.url().unwrap().as_str(), "this message"),
+        html::user_mention(culprit.id, &culprit.full_name()),
+        html::user_mention(
+            cx.update.from().unwrap().id,
+            cx.update.from().unwrap().full_name().as_str()
+        )
+    );
+    for ad in adminlist {
+        //Can't message a bot
+        if ad.user.is_bot {
+            continue;
+        }
+        //Forward the reported message to the admin and don't bother if there's an error
+        cx.requester
+            .forward_message(ad.user.id, cx.chat_id(), repo_msg.id)
+            .await
+            .ok();
+
+        //Send the report and don't bother if there's any error
+        cx.requester
+            .send_message(ad.user.id, &report_msg)
+            .parse_mode(ParseMode::Html)
+            .disable_web_page_preview(true)
+            .await
+            .ok();
+    }
+    cx.reply_to(format!(
+        "Reported {} to admins",
+        html::user_mention(culprit.id, &culprit.full_name())
     ))
     .parse_mode(ParseMode::Html)
     .await?;

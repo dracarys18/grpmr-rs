@@ -1,6 +1,6 @@
 use super::{
-    BlacklistFilter, BlacklistKind, Chat, DisableCommand, Filters, Gban, GbanStat, Logging, User,
-    Warn, WarnKind, Warnlimit,
+    BlacklistFilter, BlacklistKind, Chat, DisableCommand, Filters, Gban, GbanStat, Logging,
+    Reporting, User, Warn, WarnKind, Warnlimit,
 };
 use crate::{Cxt, TgErr};
 use mongodb::{bson::doc, Database};
@@ -44,6 +44,9 @@ fn chat_blacklist_mode(db: &Database) -> mongodb::Collection<BlacklistKind> {
 }
 fn log_collection(db: &Database) -> mongodb::Collection<Logging> {
     db.collection("Logchannel")
+}
+fn report_collection(db: &Database) -> mongodb::Collection<Reporting> {
+    db.collection("Reporting")
 }
 pub async fn insert_user(db: &Database, us: &User) -> DbResult<mongodb::results::UpdateResult> {
     let user = user_collection(db);
@@ -457,4 +460,25 @@ pub async fn get_log_channel(db: &Database, id: i64) -> DbResult<Option<i64>> {
     let lc = log_collection(db);
     let fi = lc.find_one(doc! {"chat_id":id}, None).await?;
     Ok(fi.map(|l| l.channel))
+}
+
+pub async fn set_report_setting(
+    db: &Database,
+    r: &Reporting,
+) -> DbResult<mongodb::results::UpdateResult> {
+    let rc = report_collection(db);
+    rc.update_one(
+        doc! {"chat_id":r.chat_id},
+        doc! {"$set":{"allowed":r.allowed}},
+        mongodb::options::UpdateOptions::builder()
+            .upsert(true)
+            .build(),
+    )
+    .await
+}
+
+pub async fn get_report_setting(db: &Database, chat_id: i64) -> DbResult<bool> {
+    let rc = report_collection(db);
+    let find = rc.find_one(doc! {"chat_id":chat_id}, None).await?;
+    Ok(find.map(|r| r.allowed).unwrap_or(false))
 }

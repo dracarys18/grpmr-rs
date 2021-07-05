@@ -107,6 +107,8 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Setchattitle => set_chat_tile(&cx).await?,
             Command::Setlog => add_logc(&cx).await?,
             Command::Unsetlog => remove_log(&cx).await?,
+            Command::Report => report(&cx).await?,
+            Command::Reports => report_set(&cx).await?,
         }
     }
     Ok(())

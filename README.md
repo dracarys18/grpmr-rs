@@ -57,6 +57,7 @@
 </li>
 <li><code>Chat Methods:</code> You can set chat title, chat picture directly from the bot</li>
 <li><code>Logging: </code> Recent actions are great but you can't see the changes that are older than 48 hours. So you can set-up a custom log channels to log the group properly and  access it whenever you want.</li>
+<li><code>Reporting: </code> If you spot any suspicious activity in a group you can report that to admin by replying with /report it will send the report with the message that was reported to admins.</li>
 </p>
 
 <h1>How to Use?</h1>
