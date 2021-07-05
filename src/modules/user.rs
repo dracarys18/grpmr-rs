@@ -52,7 +52,7 @@ pub async fn info(cx: &Cxt, cmd: &str) -> TgErr<()> {
     info_text = format!(
         "{}\nPermanent Link: {}",
         info_text,
-        user_mention(us_inf.id as i32, "link")
+        user_mention(us_inf.id, "link")
     );
 
     if is_rekt {
@@ -87,16 +87,16 @@ pub async fn get_id(cx: &Cxt) -> TgErr<()> {
                 if let ForwardedFrom::User(us) = frwd {
                     cx.reply_to(format!(
                         "The sender {} has ID <code>{}</code> and the forwarder {} has ID <code>{}</code>",
-                        user_mention(us.id as i32,&us.first_name),
+                        user_mention(us.id,&us.first_name),
                         us.id,
-                        user_mention(us1.id as i32,&us.first_name),
+                        user_mention(us1.id,&us.first_name),
                         us1.id))
                         .parse_mode(ParseMode::Html)
                         .await?;
                 } else if let ForwardedFrom::SenderName(_) = frwd {
                     cx.reply_to(format!(
                         "{}'s ID is <code>{}</code>",
-                        user_mention(us1.id as i32, &us1.first_name),
+                        user_mention(us1.id, &us1.first_name),
                         us1.id
                     ))
                     .parse_mode(ParseMode::Html)
@@ -105,7 +105,7 @@ pub async fn get_id(cx: &Cxt) -> TgErr<()> {
             } else if let Some(u) = user {
                 cx.reply_to(format!(
                     "{}'s ID is <code>{}</code>",
-                    user_mention(u.id as i32, &u.first_name),
+                    user_mention(u.id, &u.first_name),
                     u.id
                 ))
                 .parse_mode(ParseMode::Html)
@@ -117,7 +117,7 @@ pub async fn get_id(cx: &Cxt) -> TgErr<()> {
             cx.reply_to(format!(
                 "{}'s ID is <code>{}</code>",
                 user_mention(
-                    user_id.unwrap() as i32,
+                    user_id.unwrap(),
                     &u.first_name.unwrap_or_else(|| "".to_string())
                 ),
                 user_id.unwrap()

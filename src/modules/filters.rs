@@ -103,7 +103,7 @@ pub async fn filter(cx: &Cxt) -> TgErr<()> {
                 let logm = format!(
                     "Chat title: {}\n#FILTER\nAdmin: {}\nWord: {}",
                     html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-                    html::user_mention(admin.id as i32, &admin.full_name()),
+                    html::user_mention(admin.id, &admin.full_name()),
                     html::code_inline(&keyword)
                 );
                 send_log(cx, &logm, l).await?;
@@ -149,7 +149,7 @@ pub async fn remove_filter(cx: &Cxt) -> TgErr<()> {
         let logm = format!(
             "Chat title: {}\n#FILTER_STOPPED\nAdmin: {}\nWord: {}",
             html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-            html::user_mention(admin.id as i32, &admin.full_name()),
+            html::user_mention(admin.id, &admin.full_name()),
             html::code_inline(&keyword)
         );
         send_log(cx, &logm, l).await?;
@@ -277,7 +277,7 @@ pub async fn blacklist_filter(cx: &Cxt) -> TgErr<()> {
         let logm = format!(
             "Chat title: {}\n#BLACKLIST\nAdmin: {}\nWord: {}",
             html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-            html::user_mention(admin.id as i32, &admin.full_name()),
+            html::user_mention(admin.id, &admin.full_name()),
             html::code_inline(&blacklist)
         );
         send_log(cx, &logm, l).await?;
@@ -335,7 +335,7 @@ pub async fn remove_blacklist(cx: &Cxt) -> TgErr<()> {
             let logm = format!(
                 "Chat title: {}\n#BLACKLIST_REMOVED\nAdmin: {}\nWord: {}",
                 html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-                html::user_mention(admin.id as i32, &admin.full_name()),
+                html::user_mention(admin.id, &admin.full_name()),
                 html::code_inline(&bk)
             );
             send_log(cx, &logm, l).await?;

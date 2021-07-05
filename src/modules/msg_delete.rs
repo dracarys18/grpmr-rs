@@ -97,7 +97,7 @@ pub async fn purge(cx: &Cxt) -> TgErr<()> {
         let logm = format!(
             "Chat title: {}\n#PURGE\nAdmin: {}\nNo of messages: {}",
             html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-            html::user_mention(admin.id as i32, &admin.full_name()),
+            html::user_mention(admin.id, &admin.full_name()),
             html::code_inline(&count.to_string())
         );
         send_log(cx, &logm, l).await?;

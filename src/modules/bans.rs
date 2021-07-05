@@ -95,8 +95,8 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
         let logm = format!(
             "Chat Title: {}\n#BANNED\nAdmin: {}\nUser: {}",
             html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-            html::user_mention(admin.id as i32, &admin.full_name()),
-            html::user_mention(user_id.unwrap() as i32, &user.full_name())
+            html::user_mention(admin.id, &admin.full_name()),
+            html::user_mention(user_id.unwrap(), &user.full_name())
         );
         send_log(cx, &logm, l).await?;
     }
@@ -190,8 +190,8 @@ pub async fn temp_ban(cx: &Cxt) -> TgErr<()> {
             let logm = format!(
                 "Chat title: {}\n#TEMP_BANNED\nAdmin: {}\nUser: {}\n For: {}\n",
                 html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-                html::user_mention(admin.id as i32, &admin.full_name()),
-                html::user_mention(user_id.unwrap() as i32, &mem.user.full_name()),
+                html::user_mention(admin.id, &admin.full_name()),
+                html::user_mention(user_id.unwrap(), &mem.user.full_name()),
                 html::code_inline(&u.unwrap().to_string())
             );
             send_log(cx, &logm, l).await?;
@@ -253,8 +253,8 @@ pub async fn unban(cx: &Cxt) -> TgErr<()> {
         let logm = format!(
             "Chat title: {}\n#UNBANNED\nAdmin: {}\nUser: {}",
             html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-            html::user_mention(admin.id as i32, &admin.full_name()),
-            html::user_mention(user_id.unwrap() as i32, &user.full_name())
+            html::user_mention(admin.id, &admin.full_name()),
+            html::user_mention(user_id.unwrap(), &user.full_name())
         );
         send_log(cx, &logm, l).await?;
     }
@@ -343,8 +343,8 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
         let logm = format!(
             "Chat title: {}\n#KICKED\nAdmin: {}\nUser: {}",
             html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-            html::user_mention(admin.id as i32, &admin.full_name()),
-            html::user_mention(user_id.unwrap() as i32, &user.full_name())
+            html::user_mention(admin.id, &admin.full_name()),
+            html::user_mention(user_id.unwrap(), &user.full_name())
         );
         send_log(cx, &logm, l).await?;
     }
@@ -392,7 +392,7 @@ pub async fn kickme(cx: &Cxt, cmd: &str) -> TgErr<()> {
             let logm = format!(
                 "Chat id: {}\n#KICKME\nUser: {}",
                 html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-                html::user_mention(user_id as i32, &user.full_name())
+                html::user_mention(user_id, &user.full_name())
             );
             send_log(cx, &logm, l).await?;
         }

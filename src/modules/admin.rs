@@ -271,7 +271,7 @@ pub async fn adminlist(cx: &Cxt, cmd: &str) -> TgErr<()> {
         .map(|mem| {
             format!(
                 "- {}",
-                user_mention(mem.user.id as i32, &mem.user.full_name())
+                user_mention(mem.user.id, &mem.user.full_name())
             )
         })
         .collect::<Vec<String>>();

@@ -261,7 +261,7 @@ pub async fn warns(cx: &Cxt) -> TgErr<()> {
         }
         cx.reply_to(format!(
             "User {} got {}/{} warnings",
-            user_mention(user_id.unwrap() as i32, &chatmem.user.full_name()),
+            user_mention(user_id.unwrap(), &chatmem.user.full_name()),
             count,
             limit
         ))

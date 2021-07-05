@@ -112,8 +112,8 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
             let logm = format!(
                 "Chat title: {}\n#TEMP_MUTED\nAdmin: {}\nUser: {}\n For: {}\n",
                 html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-                html::user_mention(admin.id as i32, &admin.full_name()),
-                html::user_mention(user_id.unwrap() as i32, &mem.user.full_name()),
+                html::user_mention(admin.id, &admin.full_name()),
+                html::user_mention(user_id.unwrap(), &mem.user.full_name()),
                 html::code_inline(&u.unwrap().to_string())
             );
             send_log(cx, &logm, l).await?;
@@ -202,8 +202,8 @@ pub async fn mute(cx: &Cxt) -> TgErr<()> {
         let logm = format!(
             "Chat title: {}\n#MUTED\nAdmin: {}\nUser: {}",
             html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
-            html::user_mention(admin.id as i32, &admin.full_name()),
-            html::user_mention(user_id.unwrap() as i32, &user.full_name())
+            html::user_mention(admin.id, &admin.full_name()),
+            html::user_mention(user_id.unwrap(), &user.full_name())
         );
         send_log(cx, &logm, l).await?;
     }
