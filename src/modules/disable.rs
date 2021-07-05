@@ -41,7 +41,7 @@ pub async fn enable(cx: &Cxt) -> TgErr<()> {
         is_group(cx),
         user_should_be_admin(cx, cx.update.from().unwrap().id)
     )?;
-    let (_, args) = parse_command(cx.update.text().unwrap(), "").unwrap();
+    let (_, args) = parse_command(cx.update.text().unwrap(), consts::BOT_NAME).unwrap();
     let db = get_mdb().await;
     if args.is_empty() {
         cx.reply_to("What should I disable").await?;
