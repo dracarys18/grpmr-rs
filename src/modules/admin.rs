@@ -3,7 +3,7 @@ use crate::database::Reporting;
 use crate::util::{
     can_pin_messages, can_promote_members, check_command_disabled, consts,
     extract_text_id_from_reply, get_bot_id, get_chat_title, is_group, is_user_admin,
-    user_should_be_admin, PinMode,
+    user_should_be_admin, PinMode, ReportStatus,
 };
 use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use std::str::FromStr;
@@ -289,15 +289,15 @@ pub async fn report_set(cx: &Cxt) -> TgErr<()> {
     if arg.is_empty() {
         cx.reply_to(format!(
             "Invalid option!\nUsage: {}",
-            html::code_inline("/reports on/off")
+            html::code_inline("/reports on/off/yes/no")
         ))
         .parse_mode(ParseMode::Html)
         .await?;
         return Ok(());
     }
-    let option = arg[0].to_lowercase();
-    match option.as_str() {
-        "on" => {
+    let option = arg[0].to_lowercase().parse::<ReportStatus>().unwrap();
+    match option {
+        ReportStatus::On => {
             let r = Reporting {
                 chat_id: cx.chat_id(),
                 allowed: true,
@@ -305,7 +305,7 @@ pub async fn report_set(cx: &Cxt) -> TgErr<()> {
             set_report_setting(&db, &r).await?;
             cx.reply_to("Reporting has been turned on for this chat now user's can report any users by sending /report").await?;
         }
-        "off" => {
+        ReportStatus::Off => {
             let r = Reporting {
                 chat_id: cx.chat_id(),
                 allowed: false,
@@ -313,7 +313,7 @@ pub async fn report_set(cx: &Cxt) -> TgErr<()> {
             set_report_setting(&db, &r).await?;
             cx.reply_to("Reporting has been turned on for this chat now user's can report any users by sending /report").await?;
         }
-        _ => {
+        ReportStatus::Error => {
             cx.reply_to(format!(
                 "Invalid option!\nUsage: {}",
                 html::code_inline("/reports on/off")

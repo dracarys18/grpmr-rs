@@ -232,3 +232,20 @@ impl FromStr for BlacklistMode {
         }
     }
 }
+
+pub enum ReportStatus {
+    On,
+    Off,
+    Error,
+}
+
+impl FromStr for ReportStatus {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        match s {
+            "on" | "yes" => Ok(ReportStatus::On),
+            "off" | "no" => Ok(ReportStatus::Off),
+            _ => Ok(ReportStatus::Error),
+        }
+    }
+}
