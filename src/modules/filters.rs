@@ -225,6 +225,14 @@ pub async fn filter_list(cx: &Cxt) -> TgErr<()> {
     )?;
     let db = get_mdb().await;
     let filters = list_filters(&db, cx.chat_id()).await?;
+    if filters.is_empty() {
+        cx.reply_to(format!(
+            "No filters in {}",
+            get_chat_title(cx, cx.chat_id()).await.unwrap()
+        ))
+        .await?;
+        return Ok(());
+    }
     cx.reply_to(format!(
         "<code>Filters in this group are</code>:\n- {}",
         filters.join("\n- ")
