@@ -6,6 +6,7 @@ use serde_json::json;
 use teloxide::prelude::*;
 use teloxide::types::{InlineKeyboardButton, InlineKeyboardMarkup, ParseMode};
 use teloxide::utils::command::parse_command;
+use teloxide::utils::html;
 
 pub async fn ud(cx: &Cxt, cmd: &str) -> TgErr<()> {
     tokio::try_join!(check_command_disabled(cx, String::from(cmd)))?;
@@ -105,8 +106,8 @@ pub async fn katbin(cx: &Cxt, cmd: &str) -> TgErr<()> {
     }
     let key = json.get("paste_id").unwrap().as_str().unwrap();
     let reply_text = format!(
-        "<b>I have pasted that for you</b>\n\nhttps://katb.in/{}",
-        &key
+        "<b>I have pasted that for you</b> {}",
+        html::link(format!("https://katb.in/{}", &key).as_str(), "click here")
     );
     cx.reply_to(reply_text).parse_mode(ParseMode::Html).await?;
     Ok(())
