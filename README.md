@@ -4,63 +4,72 @@
 </div>
 <p>This is a Telegram group manager bot written in rust. Some of the available features in this bot are:</p>
 <p>
+<h3>Admin</h3>
 <li>
-<code>/ban,/unban:</code> These commands ban/unban a user from a chat.
+<code>Banning:</code> These commands ban/unban a user from a chat.
 </li>
 <li>
-<code>/mute,/unmute:</code> This command will mute/unmute a user from a particular chat. 
+<code>User Restriction:</code> This command will mute/unmute a user from a particular chat. 
 </li>
 <li>
-<code>/tban &lt;time&gt;,/tmute &lt;time&gt; </code>: These commands will ban/mute a user from a chat until a given time.
+<code>Warning:</code> Allows Admins to warn a user with a reason if the wanrs exceed the preset warn limit the user will be banned/kicked/muted based on warn settings.
 </li>
 <li>
-<code>/kick:</code> Kicks a particular user from a chat.
+<code>Kicking:</code> Kicks a particular user from a chat.
 </li>
 <li>
-<code>/info:</code> Gives info about a user Including his <code>first name,last name,user id,permanent url</code> of the user
+<code>Pinning:</code> Pins/Unpins the message in a chat.
 </li>
 <li>
-<code>/id:</code> Gives user id if mentioned or just gives the id of the chat.
+<code>Promote:</code> Promotes a user to admin/Demotes the user and removes his admin permissions.
 </li>
 <li>
-<code>/kickme:</code> Kicks the user who sent the command from the group
+<code>Chat Restriction:</code>Admins can restrict the whole chat from sending certain type of messages.
+</li>
+<p>
+<h3> Chat Methods</h3>
+<li>
+<code>Invitelink:</code> Sends the invitelink of the chat.
 </li>
 <li>
-<code>/pin,/unpin:</code> Pins/Unpins the message in a chat.
+<code>Disabling</code> Disables the use of a command in a group.
 </li>
 <li>
-<code>/promote,/demote:</code> Promotes a user to admin/Demotes the user and removes his admin permissions.
-</li>
-<li>
-<code>/invitelink:</code> Sends the invitelink of the chat.
-</li>
-<li>
-<code>/lock &lt;type&gt;,/unlock &lt;type&gt;:</code> Add or Remove some restrictions from the chat.
-</li>
-<li>
-<code>/gban,/ungban:</code> Globally bans/unbans the user from the chats which are in common with the bot.
-</li>
-<li>
-<code>/warn:</code> Warns the user in a chat when the warn count exceeds the limit the bot will kick/ban the user. 
-</li>
-<li>
-<code>/ud &lt;word&gt;:</code> Find the meaning of a word in urban dictionary.
-</li>
-<li>
-<code>/paste:</code> Pastes the given text into <a href='https://katb.in/'>Katbin</a> and sends the link of the paste.
-</li>
-<li>
-<code>/disable &lt;command&gt;:</code> Disables the use of a command in a group.
-</li>
-<li>
-<code>/filter &lt;keyword&gt; &lt;reply&gt;:</code> Enables a trigger on <code>keyword</code> and replies with <code>reply</code> whenever it matches with keyword. All <code>document,stickers,audio,video,photo</code> can be used as a trigger replies.
+<code>Filter:</code> Enables a trigger on <code>keyword</code> and replies with <code>reply</code> whenever it matches with keyword. All <code>document,stickers,audio,video,photo</code> can be used as a trigger replies.
 </li>
 <li>
 <code>Blacklist:</code> You can set any words as "blacklist" in your group and let the bot deal with whoever sends the blacklisted words automatically. The modes which are available currently are <code>Warn , Ban , Kick , Delete</code>
 </li>
-<li><code>Chat Methods:</code> You can set chat title, chat picture directly from the bot</li>
+<li><code>Chat Settings:</code> You can set chat title, chat picture directly from the bot</li>
 <li><code>Logging: </code> Recent actions are great but you can't see the changes that are older than 48 hours. So you can set-up a custom log channels to log the group properly and  access it whenever you want.</li>
 <li><code>Reporting: </code> If you spot any suspicious activity in a group you can report that to admin by replying with /report it will send the report with the message that was reported to admins.</li>
+</p>
+<p>
+<h3>User Methods</h3>
+<li>
+<code>Info:</code> Gives info about a user Including his <code>first name,last name,user id,permanent url</code> of the user
+</li>
+<li>
+<code>Id:</code> Gives user id if mentioned or just gives the id of the chat.
+</li>
+<li>
+<code>Kickme:</code> Kicks the user who sent the command from the group
+</li>
+</p>
+<p>
+<h3>Sudo</h3>
+<code>Global Bans:</code> Globally bans/unbans the user from the chats which are in common with the bot.
+</li>
+</p>
+<p>
+<h3>Other</h3>
+<li>
+<code>Urban Dictionary:</code> Find the meaning of a word in urban dictionary.
+</li>
+<li>
+<code>PasteBin:</code> Pastes the given text into <a href='https://katb.in/'>Katbin</a> and sends the link of the paste.
+</li>
+</p>
 </p>
 
 <h1>How to Use?</h1>
