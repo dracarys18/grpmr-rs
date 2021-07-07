@@ -1,4 +1,7 @@
 <h1 align="center">TgBot-RS</h1>
+<div align="center">
+<a href="https://github.com/dracarys18/grpmr-rs/actions"><img src="https://github.com/dracarys18/grpmr-rs/actions/workflows/rust.yml/badge.svg?branch=master" width=100></a>
+</div>
 <p>This is a Telegram group manager bot written in rust. Some of the available features in this bot are:</p>
 <p>
 <li>
