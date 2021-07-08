@@ -7,9 +7,7 @@ use crate::database::db_utils::{
 use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use anyhow::anyhow;
 use teloxide::prelude::*;
-use teloxide::types::{
-    ChatKind, ChatMemberKind, ChatMemberStatus, MessageEntity, MessageEntityKind,
-};
+use teloxide::types::{ChatKind, ChatMemberKind, MessageEntity, MessageEntityKind};
 
 pub async fn get_bot_id(cx: &Cxt) -> i64 {
     return cx.requester.get_me().await.unwrap().user.id;
@@ -28,10 +26,10 @@ pub async fn can_user_restrict(cx: &Cxt, user_id: i64) -> bool {
         return false;
     }
     let mem = ret.unwrap();
-    if let ChatMemberKind::Owner(_) = &mem.kind {
+    if mem.is_owner() {
         return true;
     }
-    if let ChatMemberKind::Administrator(a) = &mem.kind {
+    if let ChatMemberKind::Administrator(a) = mem.kind {
         if a.can_restrict_members {
             return true;
         }
@@ -64,10 +62,7 @@ pub async fn is_user_admin(cx: &Cxt, user_id: i64) -> bool {
         return false;
     }
     let mem = ret.unwrap();
-    if matches!(
-        mem.status(),
-        ChatMemberStatus::Administrator | ChatMemberStatus::Owner
-    ) {
+    if mem.is_privileged() {
         return true;
     }
     false
@@ -230,7 +225,7 @@ pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
     if id == *OWNER_ID || (*SUDO_USERS).contains(&id) {
         return Ok(());
     }
-    match &mem.kind {
+    match mem.kind {
         ChatMemberKind::Owner(_) => {
             return Ok(());
         }
@@ -255,7 +250,7 @@ pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
 
 pub async fn user_should_be_creator(cx: &Cxt, id: i64) -> TgErr<()> {
     let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
-    if matches!(&mem.status(), ChatMemberStatus::Owner) {
+    if mem.is_owner() {
         return Ok(());
     }
     Err(anyhow!("User is not a creator"))
@@ -266,7 +261,7 @@ pub async fn can_delete_messages(cx: &Cxt, id: i64) -> TgErr<()> {
     if id == *OWNER_ID || (*SUDO_USERS).contains(&id) {
         return Ok(());
     }
-    match &mem.kind {
+    match mem.kind {
         ChatMemberKind::Owner(_) => {
             return Ok(());
         }
@@ -293,7 +288,7 @@ pub async fn can_promote_members(cx: &Cxt, id: i64) -> TgErr<()> {
     if id == *OWNER_ID || (*SUDO_USERS).contains(&id) {
         return Ok(());
     }
-    match &mem.kind {
+    match mem.kind {
         ChatMemberKind::Owner(_) => {
             return Ok(());
         }
@@ -321,7 +316,7 @@ pub async fn can_change_info(cx: &Cxt, id: i64) -> TgErr<()> {
     if id == *OWNER_ID || (*SUDO_USERS).contains(&id) {
         return Ok(());
     }
-    match &mem.kind {
+    match mem.kind {
         ChatMemberKind::Owner(_) => {
             return Ok(());
         }

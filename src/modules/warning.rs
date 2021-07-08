@@ -1,9 +1,7 @@
 use regex::Regex;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::{GetChatId, Requester};
-use teloxide::types::{
-    ChatKind, ChatMemberStatus, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode,
-};
+use teloxide::types::{ChatKind, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode};
 use teloxide::utils::command::parse_command;
 use teloxide::utils::html::{user_mention, user_mention_or_link};
 
@@ -109,30 +107,27 @@ pub async fn handle_unwarn_button(cx: &Ctx) -> TgErr<()> {
             .map_or(0_i64, |s| s.as_str().parse::<i64>().unwrap());
         let chatmem = cx.requester.get_chat_member(chat_id, user_id).await?;
         let count = get_warn_count(&db, chat_id, warned_user).await?;
-        match chatmem.status() {
-            ChatMemberStatus::Administrator | ChatMemberStatus::Owner => {
-                if count == 0 || count.is_negative() {
-                    cx.requester
-                        .edit_message_text(
-                            chat_id,
-                            cx.update.message.clone().unwrap().id,
-                            "Warn is alredy removed",
-                        )
-                        .await?;
-                    return Ok(());
-                }
-                rm_single_warn(&db, chat_id, warned_user).await?;
+        if chatmem.is_privileged() {
+            if count == 0 || count.is_negative() {
                 cx.requester
                     .edit_message_text(
                         chat_id,
                         cx.update.message.clone().unwrap().id,
-                        format!("Warn Removed by {}", user_mention_or_link(&cx.update.from)),
+                        "Warn is alredy removed",
                     )
                     .await?;
-            }
-            _ => {
                 return Ok(());
             }
+            rm_single_warn(&db, chat_id, warned_user).await?;
+            cx.requester
+                .edit_message_text(
+                    chat_id,
+                    cx.update.message.clone().unwrap().id,
+                    format!("Warn Removed by {}", user_mention_or_link(&cx.update.from)),
+                )
+                .await?;
+        } else {
+            return Ok(());
         }
     }
     Ok(())

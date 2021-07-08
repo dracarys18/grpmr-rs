@@ -9,7 +9,7 @@ use crate::{get_mdb, Cxt, TgErr, OWNER_ID, SUDO_USERS};
 use std::str::FromStr;
 use teloxide::payloads::SendMessageSetters;
 use teloxide::prelude::*;
-use teloxide::types::{ChatKind, ChatMemberStatus, ParseMode};
+use teloxide::types::{ChatKind, ParseMode};
 use teloxide::utils::command::parse_command;
 use teloxide::utils::html::{self, user_mention, user_mention_or_link};
 
@@ -122,13 +122,13 @@ pub async fn promote(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if matches!(chatmem.status(), ChatMemberStatus::Owner) {
+        if chatmem.is_owner() {
             cx.reply_to("Mate the user is the creator of the group")
                 .await?;
             return Ok(());
         }
         let promote_text;
-        if matches!(chatmem.status(), ChatMemberStatus::Administrator) {
+        if chatmem.is_administrator() {
             if !chatmem.kind.can_be_edited() {
                 cx.reply_to("I dont have enough rights to update the user's permissons!")
                     .await?;
@@ -190,13 +190,13 @@ pub async fn demote(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if matches!(chatmem.status(), ChatMemberStatus::Owner) {
+        if chatmem.is_owner() {
             cx.reply_to("This user is the Creator of the group, How can I possibly demote them")
                 .await?;
             return Ok(());
         }
 
-        if !matches!(chatmem.status(), ChatMemberStatus::Administrator) {
+        if !chatmem.is_administrator() {
             cx.reply_to("The user has to admin in the first place to demote")
                 .await?;
             return Ok(());
