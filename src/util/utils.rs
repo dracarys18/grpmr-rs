@@ -1,3 +1,5 @@
+use chrono::Duration;
+
 use super::custom_types::*;
 use crate::database::db_utils::{
     get_disabled_command, get_gbanstat, get_userid_from_name, is_gbanned,
@@ -26,7 +28,7 @@ pub async fn can_user_restrict(cx: &Cxt, user_id: i64) -> bool {
         return false;
     }
     let mem = ret.unwrap();
-    if let ChatMemberKind::Creator(_) = &mem.kind {
+    if let ChatMemberKind::Owner(_) = &mem.kind {
         return true;
     }
     if let ChatMemberKind::Administrator(a) = &mem.kind {
@@ -64,7 +66,7 @@ pub async fn is_user_admin(cx: &Cxt, user_id: i64) -> bool {
     let mem = ret.unwrap();
     if matches!(
         mem.status(),
-        ChatMemberStatus::Administrator | ChatMemberStatus::Creator
+        ChatMemberStatus::Administrator | ChatMemberStatus::Owner
     ) {
         return true;
     }
@@ -229,7 +231,7 @@ pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
         return Ok(());
     }
     match &mem.kind {
-        ChatMemberKind::Creator(_) => {
+        ChatMemberKind::Owner(_) => {
             return Ok(());
         }
         ChatMemberKind::Administrator(_) => {
@@ -253,7 +255,7 @@ pub async fn can_pin_messages(cx: &Cxt, id: i64) -> TgErr<()> {
 
 pub async fn user_should_be_creator(cx: &Cxt, id: i64) -> TgErr<()> {
     let mem = cx.requester.get_chat_member(cx.chat_id(), id).await?;
-    if matches!(&mem.status(), ChatMemberStatus::Creator) {
+    if matches!(&mem.status(), ChatMemberStatus::Owner) {
         return Ok(());
     }
     Err(anyhow!("User is not a creator"))
@@ -265,7 +267,7 @@ pub async fn can_delete_messages(cx: &Cxt, id: i64) -> TgErr<()> {
         return Ok(());
     }
     match &mem.kind {
-        ChatMemberKind::Creator(_) => {
+        ChatMemberKind::Owner(_) => {
             return Ok(());
         }
         ChatMemberKind::Administrator(_) => {
@@ -292,7 +294,7 @@ pub async fn can_promote_members(cx: &Cxt, id: i64) -> TgErr<()> {
         return Ok(());
     }
     match &mem.kind {
-        ChatMemberKind::Creator(_) => {
+        ChatMemberKind::Owner(_) => {
             return Ok(());
         }
         ChatMemberKind::Administrator(_) => {
@@ -320,7 +322,7 @@ pub async fn can_change_info(cx: &Cxt, id: i64) -> TgErr<()> {
         return Ok(());
     }
     match &mem.kind {
-        ChatMemberKind::Creator(_) => {
+        ChatMemberKind::Owner(_) => {
             return Ok(());
         }
         ChatMemberKind::Administrator(_) => {
@@ -385,12 +387,12 @@ pub async fn enforce_gban(cx: &Cxt) -> TgErr<()> {
     Ok(())
 }
 
-pub fn get_time(unit: &TimeUnit) -> u64 {
+pub fn get_time(unit: &TimeUnit) -> Duration {
     match unit {
-        TimeUnit::Hours(t) => t * 3600,
-        TimeUnit::Minutes(t) => t * 60,
-        TimeUnit::Seconds(t) => *t,
-        TimeUnit::Days(t) => t * 3600 * 24,
+        TimeUnit::Hours(t) => Duration::hours(*t as i64),
+        TimeUnit::Minutes(t) => Duration::minutes(*t as i64),
+        TimeUnit::Seconds(t) => Duration::seconds(*t as i64),
+        TimeUnit::Days(t) => Duration::days(*t as i64),
     }
 }
 

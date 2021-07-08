@@ -1,3 +1,4 @@
+use chrono::{DateTime, NaiveDateTime, Utc};
 use teloxide::{
     payloads::{KickChatMemberSetters, SendMessageSetters},
     prelude::{GetChatId, Requester},
@@ -46,11 +47,11 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if let ChatMemberStatus::Kicked = mem.status() {
+        if let ChatMemberStatus::Banned = mem.status() {
             cx.reply_to("This user is already banned here!").await?;
             return Ok(());
         }
-        if let ChatMemberStatus::Creator = mem.status() {
+        if let ChatMemberStatus::Owner = mem.status() {
             cx.reply_to("I am not gonna ban an Admin Here!").await?;
             return Ok(());
         }
@@ -138,7 +139,7 @@ pub async fn temp_ban(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if matches!(mem.status(), ChatMemberStatus::Creator) {
+        if matches!(mem.status(), ChatMemberStatus::Owner) {
             cx.reply_to("I am not gonna ban an admin here").await?;
             return Ok(());
         }
@@ -148,7 +149,7 @@ pub async fn temp_ban(cx: &Cxt) -> TgErr<()> {
             return Ok(());
         }
 
-        if matches!(mem.status(), ChatMemberStatus::Kicked) {
+        if matches!(mem.status(), ChatMemberStatus::Banned) {
             cx.reply_to("This user is already banned").await?;
             return Ok(());
         }
@@ -172,7 +173,12 @@ pub async fn temp_ban(cx: &Cxt) -> TgErr<()> {
         let t = get_time(u.as_ref().unwrap());
         cx.requester
             .kick_chat_member(cx.chat_id(), user_id.unwrap())
-            .until_date(cx.update.date as u64 + t)
+            .until_date(
+                DateTime::<Utc>::from_utc(
+                    NaiveDateTime::from_timestamp(cx.update.date as i64, 0),
+                    Utc,
+                ) + t,
+            )
             .await?;
         cx.reply_to(format!("<b>Banned for <i>{}</i></b> ", u.as_ref().unwrap()))
             .parse_mode(ParseMode::Html)
@@ -222,7 +228,7 @@ pub async fn unban(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if !matches!(mem.status(), ChatMemberStatus::Kicked) {
+        if !matches!(mem.status(), ChatMemberStatus::Banned) {
             cx.reply_to("This user is already unbanned!").await?;
             return Ok(());
         }
@@ -292,12 +298,12 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
     {
         if matches!(
             mem.status(),
-            ChatMemberStatus::Kicked | ChatMemberStatus::Left
+            ChatMemberStatus::Banned | ChatMemberStatus::Left
         ) {
             cx.reply_to("This user is already gone mate!").await?;
             return Ok(());
         }
-        if matches!(mem.status(), ChatMemberStatus::Creator) {
+        if matches!(mem.status(), ChatMemberStatus::Owner) {
             cx.reply_to("I am not gonna kick an Admin Here!").await?;
             return Ok(());
         }
@@ -365,7 +371,7 @@ pub async fn kickme(cx: &Cxt, cmd: &str) -> TgErr<()> {
             return Ok(());
         }
         if let Ok(mem) = cx.requester.get_chat_member(cx.chat_id(), user_id).await {
-            if matches!(mem.status(), ChatMemberStatus::Creator) {
+            if matches!(mem.status(), ChatMemberStatus::Owner) {
                 cx.reply_to("I am not gonna kick an Admin Here!").await?;
                 return Ok(());
             }

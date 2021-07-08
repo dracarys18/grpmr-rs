@@ -122,7 +122,7 @@ pub async fn promote(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if matches!(chatmem.status(), ChatMemberStatus::Creator) {
+        if matches!(chatmem.status(), ChatMemberStatus::Owner) {
             cx.reply_to("Mate the user is the creator of the group")
                 .await?;
             return Ok(());
@@ -190,7 +190,7 @@ pub async fn demote(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if matches!(chatmem.status(), ChatMemberStatus::Creator) {
+        if matches!(chatmem.status(), ChatMemberStatus::Owner) {
             cx.reply_to("This user is the Creator of the group, How can I possibly demote them")
                 .await?;
             return Ok(());

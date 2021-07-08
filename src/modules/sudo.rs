@@ -118,8 +118,8 @@ pub async fn gban(cx: &Cxt) -> TgErr<()> {
             if matches!(
                 chatmem.status(),
                 ChatMemberStatus::Administrator
-                    | ChatMemberStatus::Creator
-                    | ChatMemberStatus::Kicked
+                    | ChatMemberStatus::Owner
+                    | ChatMemberStatus::Banned
             ) {
                 continue;
             }
@@ -167,7 +167,7 @@ pub async fn ungban(cx: &Cxt) -> TgErr<()> {
         let msg = cx.reply_to("Ungbanning the poor fucker").await?;
         for c in chats {
             if let Ok(mem) = cx.requester.get_chat_member(c, user_id.unwrap()).await {
-                if matches!(mem.status(), ChatMemberStatus::Kicked)
+                if matches!(mem.status(), ChatMemberStatus::Banned)
                     && cx
                         .requester
                         .unban_chat_member(c, user_id.unwrap())

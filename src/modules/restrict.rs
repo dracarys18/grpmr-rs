@@ -1,3 +1,4 @@
+use chrono::{DateTime, NaiveDateTime, Utc};
 use teloxide::{
     payloads::{RestrictChatMemberSetters, SendMessageSetters},
     prelude::{GetChatId, Requester},
@@ -55,7 +56,7 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if matches!(mem.status(), ChatMemberStatus::Creator) {
+        if matches!(mem.status(), ChatMemberStatus::Owner) {
             cx.reply_to("I am not gonna mute an admin here").await?;
             return Ok(());
         }
@@ -67,7 +68,7 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
 
         if matches!(
             mem.status(),
-            ChatMemberStatus::Kicked | ChatMemberStatus::Left
+            ChatMemberStatus::Banned | ChatMemberStatus::Left
         ) {
             cx.reply_to(
                 "This user is either left of banned from here there's no point of muting him",
@@ -94,7 +95,12 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
         let t = get_time(u.as_ref().unwrap());
         cx.requester
             .restrict_chat_member(cx.chat_id(), user_id.unwrap(), ChatPermissions::default())
-            .until_date(cx.update.date as u64 + t)
+            .until_date(
+                DateTime::<Utc>::from_utc(
+                    NaiveDateTime::from_timestamp(cx.update.date as i64, 0),
+                    Utc,
+                ) + t,
+            )
             .await?;
         cx.reply_to(format!("<b>Muted for <i>{}</i></b> ", u.as_ref().unwrap()))
             .parse_mode(ParseMode::Html)
@@ -155,7 +161,7 @@ pub async fn mute(cx: &Cxt) -> TgErr<()> {
         .get_chat_member(cx.chat_id(), user_id.unwrap())
         .await
     {
-        if matches!(mem.status(), ChatMemberStatus::Creator) {
+        if matches!(mem.status(), ChatMemberStatus::Owner) {
             cx.reply_to("I am not gonna mute an Admin Here!").await?;
             return Ok(());
         }
@@ -233,7 +239,7 @@ pub async fn unmute(cx: &Cxt) -> TgErr<()> {
 
     if matches!(
         member.status(),
-        ChatMemberStatus::Kicked | ChatMemberStatus::Left
+        ChatMemberStatus::Banned | ChatMemberStatus::Left
     ) {
         cx.reply_to("This user already banned/left from the group")
             .await?;

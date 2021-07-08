@@ -110,7 +110,7 @@ pub async fn handle_unwarn_button(cx: &Ctx) -> TgErr<()> {
         let chatmem = cx.requester.get_chat_member(chat_id, user_id).await?;
         let count = get_warn_count(&db, chat_id, warned_user).await?;
         match chatmem.status() {
-            ChatMemberStatus::Administrator | ChatMemberStatus::Creator => {
+            ChatMemberStatus::Administrator | ChatMemberStatus::Owner => {
                 if count == 0 || count.is_negative() {
                     cx.requester
                         .edit_message_text(
