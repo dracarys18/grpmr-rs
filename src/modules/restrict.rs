@@ -116,11 +116,11 @@ pub async fn temp_mute(cx: &Cxt) -> TgErr<()> {
                 .get_chat_member(cx.chat_id(), user_id.unwrap())
                 .await?;
             let logm = format!(
-                "Chat title: {}\n#TEMP_MUTED\nAdmin: {}\nUser: {}\n For: {}\n",
+                "Chat title: {}\n#TEMP_MUTED\nAdmin: {}\nUser: {}\nUntil: {}\n",
                 html::code_inline(&get_chat_title(cx, cx.chat_id()).await.unwrap()),
                 html::user_mention(admin.id, &admin.full_name()),
                 html::user_mention(user_id.unwrap(), &mem.user.full_name()),
-                html::code_inline(&u.unwrap().to_string())
+                html::code_inline(&mem.until_date().unwrap().to_string())
             );
             send_log(cx, &logm, l).await?;
         }
