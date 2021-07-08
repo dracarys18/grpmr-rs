@@ -78,29 +78,15 @@ pub async fn user_should_be_admin(cx: &Cxt, user_id: i64) -> TgErr<()> {
     }
     Err(anyhow!("User isnt admin"))
 }
-pub fn extract_id_from_reply(cx: &Cxt) -> (Option<i64>, Option<String>) {
-    let prev_message = cx.update.reply_to_message();
-    if prev_message.is_none() {
-        return (None, None);
-    }
-    if let Some(user) = prev_message.unwrap().from() {
-        if let Some(msg_text) = prev_message.unwrap().text() {
-            let res: Vec<_> = msg_text.splitn(2, char::is_whitespace).collect();
-            if res.len() < 2 {
-                return (Some(user.id), Some("".to_owned()));
-            }
-            return (Some(user.id), Some("".to_owned()));
-        }
-        return (Some(user.id), None);
-    }
-    (None, None)
+pub fn extract_id_from_reply(cx: &Cxt) -> Option<i64> {
+    cx.update.reply_to_message()?.from().map(|u| u.id)
 }
 pub async fn extract_text_id_from_reply(cx: &Cxt) -> (Option<i64>, Option<String>) {
     if let Some(msg_text) = cx.update.text() {
         let split_text: Vec<_> = msg_text.splitn(2, char::is_whitespace).collect();
 
         if split_text.len() < 2 {
-            return extract_id_from_reply(cx);
+            return (extract_id_from_reply(cx), None);
         }
 
         let text_to_parse = split_text[1];
@@ -168,9 +154,7 @@ pub async fn extract_text_id_from_reply(cx: &Cxt) -> (Option<i64>, Option<String
                     }
                 }
             } else if cx.update.reply_to_message().is_some() {
-                let (id, tet) = extract_id_from_reply(&cx);
-                user_id = id;
-                text = tet;
+                user_id = extract_id_from_reply(&cx);
             } else {
                 return (None, None);
             }
