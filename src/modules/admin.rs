@@ -113,6 +113,10 @@ pub async fn promote(cx: &Cxt) -> TgErr<()> {
         can_promote_members(cx, cx.update.from().unwrap().id)
     )?;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
+    let botmem = cx
+        .requester
+        .get_chat_member(cx.chat_id(), get_bot_id(cx).await)
+        .await?;
     if user_id.is_none() {
         cx.reply_to("Mention someone to promote").await?;
         return Ok(());
@@ -146,12 +150,12 @@ pub async fn promote(cx: &Cxt) -> TgErr<()> {
         }
         cx.requester
             .promote_chat_member(cx.chat_id(), user_id.unwrap())
-            .can_manage_chat(true)
-            .can_change_info(true)
-            .can_delete_messages(true)
-            .can_invite_users(true)
-            .can_restrict_members(true)
-            .can_pin_messages(true)
+            .can_manage_chat(botmem.can_manage_chat())
+            .can_change_info(botmem.can_change_info())
+            .can_delete_messages(botmem.can_delete_messages())
+            .can_invite_users(botmem.can_invite_users())
+            .can_restrict_members(botmem.can_restrict_members())
+            .can_pin_messages(botmem.can_pin_messages())
             .await?;
         if text.is_some() {
             cx.requester
