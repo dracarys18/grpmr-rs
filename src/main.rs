@@ -139,6 +139,7 @@ async fn run() {
                 answer_callback(cx).await.log_on_error().await
             })
         })
+        .setup_ctrlc_handler()
         .dispatch()
         .await;
 }
