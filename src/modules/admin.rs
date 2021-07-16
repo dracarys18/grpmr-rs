@@ -131,23 +131,22 @@ pub async fn promote(cx: &Cxt) -> TgErr<()> {
                 .await?;
             return Ok(());
         }
-        let promote_text;
-        if chatmem.is_administrator() {
+        let promote_text = if chatmem.is_administrator() {
             if !chatmem.kind.can_be_edited() {
                 cx.reply_to("I dont have enough rights to update the user's permissons!")
                     .await?;
                 return Ok(());
             }
-            promote_text = format!(
+            format!(
                 "Admin Permissions has been updated for\n <b>User:</b>{}",
                 user_mention_or_link(&chatmem.user)
-            );
+            )
         } else {
-            promote_text = format!(
+            format!(
                 "Promoted\n<b>User:</b>{}",
                 user_mention_or_link(&chatmem.user)
-            );
-        }
+            )
+        };
         cx.requester
             .promote_chat_member(cx.chat_id(), user_id.unwrap())
             .can_manage_chat(botmem.can_manage_chat())

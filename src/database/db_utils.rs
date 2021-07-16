@@ -329,10 +329,7 @@ pub async fn list_filters(db: &Database, chat_id: i64) -> DbResult<Vec<String>> 
     let dist = fc
         .distinct("filter", doc! {"chat_id":chat_id}, None)
         .await?;
-    Ok(dist
-        .iter()
-        .map(|s| s.as_str().unwrap().to_owned())
-        .collect())
+    Ok(dist.iter().map(|s| s.to_string()).collect())
 }
 pub async fn rm_filter(
     db: &Database,
@@ -362,10 +359,7 @@ pub async fn get_blacklist(db: &Database, chat_id: i64) -> DbResult<Vec<String>>
     let find = blc
         .distinct("blacklist", doc! {"chat_id":chat_id}, None)
         .await?;
-    Ok(find
-        .iter()
-        .map(|b| b.as_str().unwrap().to_owned())
-        .collect())
+    Ok(find.iter().map(|b| b.to_string()).collect())
 }
 pub async fn rm_blacklist(
     db: &Database,
@@ -430,10 +424,8 @@ pub async fn get_disabled_command(db: &Database, id: i64) -> DbResult<Vec<String
         return Ok(Vec::new());
     }
 
-    Ok(
-        f.map(|d| d.disabled_commands.iter().map(|b| b.to_owned()).collect())
-            .unwrap(),
-    )
+    Ok(f.map(|d| d.disabled_commands.into_iter().collect())
+        .unwrap())
 }
 
 pub async fn add_log_channel(
