@@ -13,12 +13,12 @@ dotenv = "0.15.0"
 lazy_static = "1.4.0"
 log = "0.4.8"
 mime = "0.3.16"
-mongodb = "2.0.0-beta.2"
+mongodb = "2.0.0-beta.3"
 pretty_env_logger = "0.4.0"
 regex = "1.5.4"
 reqwest = { version = "0.11.4", features = ["json"] }
 serde = { version = "1.0.126", features = ["derive"] }
 serde_json = "1.0.64"
-teloxide = { version = "0.5", features = ["auto-send", "macros"] }
+teloxide = { version = "0.5.1", features = ["auto-send", "macros"] }
 tokio = { version = "1.8", features = ["rt-multi-thread", "macros","time"] }
 tokio-stream = "0.1.6"

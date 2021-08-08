@@ -174,7 +174,7 @@ pub async fn insert_warn(db: &Database, w: &Warn) -> DbResult<mongodb::results::
     let warn = warn_collection(db);
     warn.update_one(
         doc! {"chat_id":w.chat_id},
-        doc! {"$set":{"user_id":w.user_id,"reason":&w.reason,"count":w.count}},
+        doc! {"$set":{"user_id":w.user_id,"reason":&w.reason,"count":w.count as i64}},
         mongodb::options::UpdateOptions::builder()
             .upsert(true)
             .build(),
@@ -197,7 +197,7 @@ pub async fn set_warn_limit(
     let wc = warn_limit_collection(db);
     wc.update_one(
         doc! {"chat_id":wl.chat_id},
-        doc! {"$set":{"limit":wl.limit}},
+        doc! {"$set":{"limit":wl.limit as i64}},
         mongodb::options::UpdateOptions::builder()
             .upsert(true)
             .build(),
