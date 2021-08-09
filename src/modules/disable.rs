@@ -27,7 +27,7 @@ pub async fn disable(cx: &Cxt) -> TgErr<()> {
             chat_id: cx.chat_id(),
             disabled_commands: cmds,
         };
-        disable_command(&db, &dc).await?;
+        disable_command(&db, dc).await?;
         cx.reply_to(format!("Command {} has been disabled", disable_val))
             .await?;
     } else {

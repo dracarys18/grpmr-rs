@@ -117,7 +117,7 @@ async fn answer_callback(cx: Ctx) -> TgErr<()> {
     let data = &cx.update.data;
     if let Some(d) = data {
         let warn_re = Regex::new(r#"rm_warn\((.+?)\)"#).unwrap();
-        if warn_re.is_match(&d) {
+        if warn_re.is_match(d) {
             handle_unwarn_button(&cx).await?;
         }
     }

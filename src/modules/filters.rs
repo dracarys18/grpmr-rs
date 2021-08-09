@@ -44,7 +44,7 @@ pub async fn filter(cx: &Cxt) -> TgErr<()> {
         if args.get(1).is_none() {
             if cx.update.reply_to_message().is_some() {
                 let rep_msg = cx.update.reply_to_message().unwrap();
-                let fil_type = get_filter_type(&rep_msg).await;
+                let fil_type = get_filter_type(rep_msg).await;
                 let parsed_type = fil_type.parse::<FilterType>().unwrap();
                 let reply;
                 let cap = rep_msg.caption().map(String::from);
@@ -433,7 +433,7 @@ pub async fn action_blacklist(cx: &Cxt) -> TgErr<()> {
         is_group(cx),                                           //Should be a group
     )?;
     let text = extract_filter_text(&cx.update).await;
-    let bot_id = get_bot_id(&cx).await;
+    let bot_id = get_bot_id(cx).await;
     let db = get_mdb().await;
 
     if cx.update.from().is_none() {

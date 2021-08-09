@@ -24,7 +24,7 @@ pub async fn ban(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
     let db = get_mdb().await;
-    let bot_id = get_bot_id(&cx).await;
+    let bot_id = get_bot_id(cx).await;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
     let reason = text.unwrap_or_else(|| String::from("None"));
     if user_id.is_none() {
@@ -149,7 +149,7 @@ pub async fn temp_ban(cx: &Cxt) -> TgErr<()> {
             return Ok(());
         }
 
-        if user_id.unwrap() == get_bot_id(&cx).await {
+        if user_id.unwrap() == get_bot_id(cx).await {
             cx.reply_to("I am not gonna ban myself you idiot!").await?;
             return Ok(());
         }
@@ -263,7 +263,7 @@ pub async fn kick(cx: &Cxt) -> TgErr<()> {
         user_should_restrict(cx, cx.update.from().unwrap().id), //User should have restrict rights
     )?;
     let db = get_mdb().await;
-    let bot_id = get_bot_id(&cx).await;
+    let bot_id = get_bot_id(cx).await;
     let (user_id, text) = extract_text_id_from_reply(cx).await;
     if user_id.is_none() {
         cx.reply_to("No user was targeted").await?;

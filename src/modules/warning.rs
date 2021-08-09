@@ -32,7 +32,7 @@ pub async fn warn(cx: &Cxt) -> TgErr<()> {
 }
 
 pub async fn warn_user(cx: &Cxt, id: i64, reason: String) -> TgErr<()> {
-    let bot_id = get_bot_id(&cx).await;
+    let bot_id = get_bot_id(cx).await;
     let db = get_mdb().await;
     if id == bot_id {
         cx.reply_to("I am not gonna warn myself fella! Try using your brain next time!")
@@ -97,7 +97,7 @@ pub async fn handle_unwarn_button(cx: &Ctx) -> TgErr<()> {
     let data = &cx.update.data;
     if let Some(d) = data {
         let re = Regex::new(r#"rm_warn\((.+?),(.+?)\)"#).unwrap();
-        let caps = re.captures(&d).unwrap();
+        let caps = re.captures(d).unwrap();
         let chat_id = caps
             .get(1)
             .map_or(0_i64, |s| s.as_str().parse::<i64>().unwrap());

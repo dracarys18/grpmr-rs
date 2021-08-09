@@ -97,12 +97,10 @@ pub async fn extract_text_id_from_reply(cx: &Cxt) -> (Option<i64>, Option<String
         let mut ent: Option<&MessageEntity> = None;
 
         if let Some(entities) = cx.update.entities() {
-            let filtered_entities: Vec<_> = entities
+            if entities
                 .iter()
-                .filter(|entity| matches!(entity.kind, MessageEntityKind::TextMention { user: _ }))
-                .collect();
-
-            if !filtered_entities.is_empty() {
+                .any(|entity| matches!(entity.kind, MessageEntityKind::TextMention { user: _ }))
+            {
                 ent = Some(&entities[0]);
             }
 
@@ -154,7 +152,7 @@ pub async fn extract_text_id_from_reply(cx: &Cxt) -> (Option<i64>, Option<String
                     }
                 }
             } else if cx.update.reply_to_message().is_some() {
-                user_id = extract_id_from_reply(&cx);
+                user_id = extract_id_from_reply(cx);
             } else {
                 return (None, None);
             }

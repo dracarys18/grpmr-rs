@@ -72,7 +72,7 @@ pub async fn save_user(cx: &Cxt, db: &Database) -> TgErr<()> {
             user_id: user.id,
             user_name: uname.unwrap_or_else(|| "None".to_string()),
         };
-        insert_user(&db, user).await?;
+        insert_user(db, user).await?;
     }
     Ok(())
 }
@@ -256,7 +256,7 @@ pub async fn rm_single_warn(
     user_id: i64,
 ) -> DbResult<mongodb::results::UpdateResult> {
     let warn = warn_collection(db);
-    let count = get_warn_count(&db, chat_id, user_id).await?;
+    let count = get_warn_count(db, chat_id, user_id).await?;
     warn.update_one(
         doc! {"chat_id":chat_id},
         doc! {"$set":{"count":count-1}},
@@ -420,7 +420,7 @@ pub async fn get_disabled_command(db: &Database, id: i64) -> DbResult<Vec<String
             chat_id: id,
             disabled_commands: Vec::new(),
         };
-        disable_command(&db, dc).await?;
+        disable_command(db, dc).await?;
         return Ok(Vec::new());
     }
 
