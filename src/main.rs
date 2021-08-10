@@ -82,6 +82,7 @@ async fn answer(cx: Cxt) -> Result<(), Box<dyn Error + Send + Sync>> {
             Command::Leavechat => leavechat(&cx).await?,
             Command::Ud => ud(&cx, cmnd).await?,
             Command::Paste => katbin(&cx, cmnd).await?,
+            Command::Echo => echo(&cx, cmnd).await?,
             Command::Lock => lock(&cx).await?,
             Command::Unlock => unlock(&cx).await?,
             Command::Locktypes => locktypes(&cx).await?,

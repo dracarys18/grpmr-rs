@@ -48,6 +48,8 @@ pub enum Command {
     Ud,
     #[command(description = "Pastes text to dogbin")]
     Paste,
+    #[command(description = "Echoes same thing basically")]
+    Echo,
     #[command(description = "Changes chat permissons")]
     Lock,
     #[command(description = "Unlocks locked permissions in a chat")]

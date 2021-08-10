@@ -1,4 +1,4 @@
-use crate::util::check_command_disabled;
+use crate::util::{check_command_disabled, consts, sudo_or_owner_filter};
 use crate::{Cxt, TgErr, BOT_TOKEN};
 use mime;
 use regex::Regex;
@@ -110,5 +110,29 @@ pub async fn katbin(cx: &Cxt, cmd: &str) -> TgErr<()> {
         html::link(format!("https://katb.in/{}", &key).as_str(), "click here")
     );
     cx.reply_to(reply_text).parse_mode(ParseMode::Html).await?;
+    Ok(())
+}
+
+pub async fn echo(cx: &Cxt, cmd: &str) -> TgErr<()> {
+    tokio::try_join!(
+        check_command_disabled(cx, cmd.to_string()),
+        sudo_or_owner_filter(cx.update.from().unwrap().id)
+    )?;
+
+    if let Some(text) = cx.update.text() {
+        let (_, echo_text) = parse_command(text, consts::BOT_NAME).unwrap();
+
+        //Sudo is a dumbfuck demote needed immediately
+        if echo_text.is_empty() {
+            return Ok(());
+        }
+
+        cx.reply_to(echo_text.join(" ")).await?;
+        //Try to delete the echo text sent by the user
+        cx.requester
+            .delete_message(cx.chat_id(), cx.update.id)
+            .await
+            .ok();
+    }
     Ok(())
 }
